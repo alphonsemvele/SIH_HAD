@@ -12,7 +12,7 @@ use Carbon\Carbon;
 
 class MedicamentController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $query = Medicament::with(['fournisseur', 'categorieMedicament'])
             ->when($request->search, fn($q) =>

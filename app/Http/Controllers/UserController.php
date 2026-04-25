@@ -50,7 +50,7 @@ class UserController extends Controller
         ];
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $query = User::with('service');
 

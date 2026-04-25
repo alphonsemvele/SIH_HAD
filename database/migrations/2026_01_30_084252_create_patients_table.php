@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('ville', 50)->nullable();
             $table->string('quartier', 100)->nullable();
             $table->string('profession', 100)->nullable();
-            $table->enum('situation_matrimoniale', ["celibataire","marie","divorce","veuf"])->nullable();
+            $table->enum('situation_matrimoniale', ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf/Veuve"])->nullable();
             $table->enum('groupe_sanguin', ["A+","A-","B+","B-","AB+","AB-","O+","O-"])->nullable();
             $table->json('allergies')->nullable();
             $table->json('antecedents_medicaux')->nullable();
@@ -43,7 +43,8 @@ return new class extends Migration
             $table->string('personne_contact_lien', 50)->nullable();
             $table->string('photo')->nullable();
             $table->text('notes')->nullable();
-            $table->enum('statut', ["actif","inactif","decede"])->default('actif');
+            // Dans database/migrations/xxxx_create_patients_table.php
+            $table->enum('statut', ['Hospitalisé', 'Consultation', 'Urgence', 'Sortie'])->default('Consultation');
             $table->timestamps();
             $table->softDeletes();
         });

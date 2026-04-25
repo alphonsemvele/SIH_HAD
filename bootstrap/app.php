@@ -18,6 +18,16 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+        
+        // Configuration pour les routes API (pas de CSRF, pas de sessions web)
+        $middleware->group('api', [
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
+        ]);
+        
+        // Exclure les routes API de la protection CSRF
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

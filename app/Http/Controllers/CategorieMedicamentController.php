@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CategorieMedicamentStoreRequest;
+use App\Http\Requests\CategorieMedicamentUpdateRequest;
 use App\Models\CategorieMedicament;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,32 +40,16 @@ class CategorieMedicamentController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(CategorieMedicamentStoreRequest $request)
     {
-        $validated = $request->validate([
-            'code'        => 'required|string|max:20|unique:categorie_medicaments,code',
-            'nom'         => 'required|string|max:100',
-            'description' => 'nullable|string',
-            'couleur'     => 'nullable|string|max:7',
-            'actif'       => 'boolean',
-        ]);
-
-        CategorieMedicament::create($validated);
+        CategorieMedicament::create($request->validated());
 
         return back()->with('success', 'Catégorie créée avec succès.');
     }
 
-    public function update(Request $request, CategorieMedicament $categorieMedicament)
+    public function update(CategorieMedicamentUpdateRequest $request, CategorieMedicament $categorieMedicament)
     {
-        $validated = $request->validate([
-            'code'        => 'required|string|max:20|unique:categorie_medicaments,code,' . $categorieMedicament->id,
-            'nom'         => 'required|string|max:100',
-            'description' => 'nullable|string',
-            'couleur'     => 'nullable|string|max:7',
-            'actif'       => 'boolean',
-        ]);
-
-        $categorieMedicament->update($validated);
+        $categorieMedicament->update($request->validated());
 
         return back()->with('success', 'Catégorie mise à jour.');
     }

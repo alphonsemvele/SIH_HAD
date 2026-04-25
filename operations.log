@@ -1,0 +1,32 @@
+Opérations SIH Simple - Sat Apr 25 01:35:16 PM WAT 2026
+==========================================
+[2026-04-25 13:35:16] INFO: Vérification des dépendances...
+[2026-04-25 13:35:16] INFO: Démarrage du backend Laravel...
+[2026-04-25 13:35:16] INFO: Attente de Backend Laravel...
+[2026-04-25 13:35:18] SUCCESS: Backend Laravel est prêt!
+[2026-04-25 13:35:18] INFO: Démarrage du frontend React...
+[2026-04-25 13:35:18] INFO: Attente de Frontend React...
+[2026-04-25 13:35:18] SUCCESS: Frontend React est prêt!
+[2026-04-25 13:35:18] INFO: Démarrage des tests des endpoints publics...
+[2026-04-25 13:35:18] INFO: Test: GET http://localhost:8000/login - Page de login
+[2026-04-25 13:35:18] SUCCESS: Page de login - Status: 200
+[2026-04-25 13:35:18] INFO: Test: GET http://localhost:8000/ - Page d'accueil
+[2026-04-25 13:35:18] SUCCESS: Page d'accueil - Status: 200
+[2026-04-25 13:35:18] INFO: Tests des endpoints protégés (attendu: 401 Unauthorized)...
+[2026-04-25 13:35:18] INFO: Test: GET http://localhost:8000/patients - Liste des patients
+[2026-04-25 13:35:18] SUCCESS: Liste des patients - Status: 401
+[2026-04-25 13:35:18] INFO: Test: GET http://localhost:8000/personnel - Liste du personnel
+[2026-04-25 13:35:18] SUCCESS: Liste du personnel - Status: 401
+[2026-04-25 13:35:18] INFO: Test: GET http://localhost:8000/services - Liste des services
+[2026-04-25 13:35:18] SUCCESS: Liste des services - Status: 401
+[2026-04-25 13:35:18] INFO: Test: GET http://localhost:8000/medicaments - Liste des médicaments
+[2026-04-25 13:35:19] SUCCESS: Liste des médicaments - Status: 401
+[2026-04-25 13:35:19] INFO: Test: GET http://localhost:8000/dashboard - Tableau de bord
+[2026-04-25 13:35:19] SUCCESS: Tableau de bord - Status: 401
+[2026-04-25 13:35:19] INFO: Tests des créations sans authentification...
+[2026-04-25 13:35:19] INFO: Test: POST http://localhost:8000/patients - Création patient sans auth
+[2026-04-25 13:35:19] ERROR: Création patient sans auth - Status: 419 (attendu: 401)
+[2026-04-25 13:35:19] INFO: Arrêt des processus...
+[2026-04-25 13:35:19] INFO: Backend arrêté (PID: 32703)
+[2026-04-25 13:35:19] INFO: Frontend arrêté (PID: 32747)
+[2026-04-25 13:35:19] INFO: Nettoyage terminé

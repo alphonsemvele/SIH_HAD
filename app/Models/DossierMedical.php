@@ -177,7 +177,7 @@ class DossierMedical extends Model
      */
     public function isActif(): bool
     {
-        return $this->statut === 'Actif';
+        return $this->statut === 'actif';
     }
 
     /**
@@ -185,7 +185,7 @@ class DossierMedical extends Model
      */
     public function scopeActifs($query)
     {
-        return $query->where('statut', 'Actif');
+        return $query->where('statut', 'actif');
     }
 
     /**

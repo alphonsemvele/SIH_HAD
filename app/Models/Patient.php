@@ -188,7 +188,7 @@ class Patient extends Model
                 'date_ouverture' => now(),
                 'groupe_sanguin' => $this->groupe_sanguin,
                 'allergies_confirmees' => $this->allergies,
-                'statut' => 'Actif',
+                'statut' => 'actif',
             ]);
         }
         return $this->dossierMedical;

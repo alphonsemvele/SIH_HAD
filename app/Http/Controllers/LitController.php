@@ -18,7 +18,7 @@ class LitController extends Controller
 {
     // ── Page principale : vue d'ensemble services + lits ─────────────
 
-    public function index(): Response
+    public function index()
     {
         $services = Service::actif()
             ->with([

@@ -6,6 +6,7 @@ use App\Models\Service;
 use App\Models\Tournee;
 use App\Models\VisiteHad;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,7 +16,7 @@ class TourneeController extends Controller
 {
     // ── Index ─────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $tournees = Tournee::with([
             'soignant:id,name',
@@ -38,6 +39,22 @@ class TourneeController extends Controller
             'patients_a_visiter'  => $tournees->sum('patients_total'),
             'patients_vus'        => $tournees->sum('patients_vus'),
         ];
+        // Si la requête vient de l'API mobile → JSON
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'tournees'  => $tournees,
+                'stats'     => $stats,
+                'services'  => Service::actif()->select('id', 'nom', 'etage')->get()->map(fn ($s) => [
+                    'id'               => $s->id,
+                    'nom'              => $s->nom,
+                    'etage'            => $s->etage,
+                    'patients_actuels' => $s->occupationsActives()->count(),
+                ]),
+                'soignants' => User::select('id', 'name')->orderBy('name')->get(),
+                'filters'   => $request->only(['service_id', 'soignant_id', 'statut']),
+            ]);
+        }
+        
         return Inertia::render('dashboard/tourne', [
             'tournees'  => $tournees,
             'stats'     => $stats,
@@ -54,7 +71,7 @@ class TourneeController extends Controller
 
     // ── Store ─────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'soignant_id'         => 'required|exists:users,id',
@@ -75,6 +92,16 @@ class TourneeController extends Controller
             $this->genererVisites($tournee);
         }
 
+        // Pour API: retourner JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tournée créée avec succès',
+                'data' => $tournee->load(['soignant', 'service'])
+            ], 201);
+        }
+        
+        // Pour Web: retourner redirect
         return redirect()->back()->with('success', 'Tournée planifiée avec succès.');
     }
 

@@ -12,7 +12,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index()
     {
         // ── Stats ─────────────────────────────────────────────────────
         $stats = [

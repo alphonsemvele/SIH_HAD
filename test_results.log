@@ -1,0 +1,339 @@
+Test SIH Simple - Sat Apr 25 01:35:16 PM WAT 2026
+==========================================
+[0;34m[INFO][0m Vérification des dépendances...
+[0;34m[INFO][0m Démarrage du backend Laravel...
+[0;34m[INFO][0m Attente de Backend Laravel...
+[0;32m[SUCCESS][0m Backend Laravel est prêt!
+[0;34m[INFO][0m Démarrage du frontend React...
+[0;34m[INFO][0m Attente de Frontend React...
+[0;32m[SUCCESS][0m Frontend React est prêt!
+[0;34m[INFO][0m Démarrage des tests des endpoints publics...
+[0;34m[INFO][0m Test: GET http://localhost:8000/login - Page de login
+[0;32m[SUCCESS][0m Page de login - Status: 200
+[0;34m[INFO][0m Test: GET http://localhost:8000/ - Page d'accueil
+[0;32m[SUCCESS][0m Page d'accueil - Status: 200
+[0;34m[INFO][0m Tests des endpoints protégés (attendu: 401 Unauthorized)...
+[0;34m[INFO][0m Test: GET http://localhost:8000/patients - Liste des patients
+[0;32m[SUCCESS][0m Liste des patients - Status: 401
+[0;34m[INFO][0m Test: GET http://localhost:8000/personnel - Liste du personnel
+[0;32m[SUCCESS][0m Liste du personnel - Status: 401
+[0;34m[INFO][0m Test: GET http://localhost:8000/services - Liste des services
+[0;32m[SUCCESS][0m Liste des services - Status: 401
+[0;34m[INFO][0m Test: GET http://localhost:8000/medicaments - Liste des médicaments
+[0;32m[SUCCESS][0m Liste des médicaments - Status: 401
+[0;34m[INFO][0m Test: GET http://localhost:8000/dashboard - Tableau de bord
+[0;32m[SUCCESS][0m Tableau de bord - Status: 401
+[0;34m[INFO][0m Tests des créations sans authentification...
+[0;34m[INFO][0m Test: POST http://localhost:8000/patients - Création patient sans auth
+[0;31m[ERROR][0m Création patient sans auth - Status: 419 (attendu: 401)
+Réponse: {
+    "message": "CSRF token mismatch.",
+    "exception": "Symfony\\Component\\HttpKernel\\Exception\\HttpException",
+    "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php",
+    "line": 674,
+    "trace": [
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php",
+            "line": 617,
+            "function": "prepareException",
+            "class": "Illuminate\\Foundation\\Exceptions\\Handler",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Routing/Pipeline.php",
+            "line": 51,
+            "function": "render",
+            "class": "Illuminate\\Foundation\\Exceptions\\Handler",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 213,
+            "function": "handleException",
+            "class": "Illuminate\\Routing\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/View/Middleware/ShareErrorsFromSession.php",
+            "line": 48,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\View\\Middleware\\ShareErrorsFromSession",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php",
+            "line": 120,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php",
+            "line": 63,
+            "function": "handleStatefulRequest",
+            "class": "Illuminate\\Session\\Middleware\\StartSession",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Session\\Middleware\\StartSession",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Cookie/Middleware/AddQueuedCookiesToResponse.php",
+            "line": 36,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Cookie/Middleware/EncryptCookies.php",
+            "line": 74,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Cookie\\Middleware\\EncryptCookies",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 126,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Routing/Router.php",
+            "line": 807,
+            "function": "then",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Routing/Router.php",
+            "line": 786,
+            "function": "runRouteWithinStack",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Routing/Router.php",
+            "line": 750,
+            "function": "runRoute",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Routing/Router.php",
+            "line": 739,
+            "function": "dispatchToRoute",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php",
+            "line": 200,
+            "function": "dispatch",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 169,
+            "function": "Illuminate\\Foundation\\Http\\{closure}",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php",
+            "line": 21,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/ConvertEmptyStringsToNull.php",
+            "line": 31,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php",
+            "line": 21,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TrimStrings.php",
+            "line": 51,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TrimStrings",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePostSize.php",
+            "line": 27,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\ValidatePostSize",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/PreventRequestsDuringMaintenance.php",
+            "line": 109,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php",
+            "line": 48,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\HandleCors",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php",
+            "line": 58,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\TrustProxies",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php",
+            "line": 22,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php",
+            "line": 26,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 208,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\ValidatePathEncoding",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php",
+            "line": 126,
+            "function": "Illuminate\\Pipeline\\{closure}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php",
+            "line": 175,
+            "function": "then",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php",
+            "line": 144,
+            "function": "sendRequestThroughRouter",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/Application.php",
+            "line": 1219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/public/index.php",
+            "line": 20,
+            "function": "handleRequest",
+            "class": "Illuminate\\Foundation\\Application",
+            "type": "->"
+        },
+        {
+            "file": "/home/aymeric/new-project-laravel-3/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php",
+            "line": 23,
+            "function": "require_once"
+        }
+    ]
+}
+[0;34m[INFO][0m Arrêt des processus...
+[0;34m[INFO][0m Backend arrêté (PID: 32703)
+[0;34m[INFO][0m Frontend arrêté (PID: 32747)
+[0;34m[INFO][0m Nettoyage terminé
