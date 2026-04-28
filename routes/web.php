@@ -20,7 +20,7 @@ use App\Http\Controllers\TourneeController;
 use App\Http\Controllers\AnomalieController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminRoleController;
-
+use App\Http\Controllers\PrescriptionController;
 Route::middleware(['auth', 'verified'])
     ->prefix('anomalies')
     ->name('anomalies.')
@@ -163,6 +163,10 @@ Route::put('/dossiers-medicaux/{dossier}', [DossierMedicalController::class, 'up
     
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+
+    Route::get('/patients/{patient}/anomalies-actives', [PrescriptionController::class, 'anomaliesActives']);
+
+
     Route::resource('patients', PatientController::class);
 
       Route::resource('personnel', UserController::class)->parameters([
@@ -194,9 +198,18 @@ Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy'])->n
     //     return Inertia::render('dashboard/personnel');
     // })->name('personnel.index');
 
-    Route::get('/prescription', function () {
-        return Inertia::render('dashboard/prescription');
-    })->name('prescriptions.index');
+Route::get('/prescription', [PrescriptionController::class, 'index'])
+     ->name('prescriptions.index');
+
+     Route::post('/prescriptions',                        [PrescriptionController::class, 'store'])         ->name('prescriptions.store');
+Route::put('/prescriptions/{prescription}/statut',   [PrescriptionController::class, 'updateStatut'])  ->name('prescriptions.statut');
+Route::post('/prescriptions/{prescription}/renouveler', [PrescriptionController::class, 'renouveler']) ->name('prescriptions.renouveler');
+Route::get('/prescriptions/{prescription}/print',    [PrescriptionController::class, 'print'])         ->name('prescriptions.print');
+Route::get('/patients/{patient}/anomalies-actives',  [PrescriptionController::class, 'anomaliesActives']);
+
+
+Route::put('/prescriptions/{prescription}', [PrescriptionController::class, 'update'])
+     ->name('prescriptions.update');
 
   Route::get('/admin/permissions', function () {
         return Inertia::render('admin/permission');

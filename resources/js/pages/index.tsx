@@ -1,179 +1,80 @@
 import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-// Modal telechargement APK avec verification de code
+// ─── Modal APK ────────────────────────────────────────────────────────────────
+
 function DownloadModal({ onClose }: { onClose: () => void }) {
-    const [code, setCode]           = useState('');
-    const [error, setError]         = useState('');
-    const [success, setSuccess]     = useState(false);
-    const [loading, setLoading]     = useState(false);
-    const [attempts, setAttempts]   = useState(0);
-
-    const CODE_SECRET = 'MEDCARE2025'; // code à changer selon vos besoins
+    const [code, setCode]         = useState('');
+    const [error, setError]       = useState('');
+    const [success, setSuccess]   = useState(false);
+    const [loading, setLoading]   = useState(false);
+    const [attempts, setAttempts] = useState(0);
+    const CODE_SECRET = 'MEDCARE2025';
 
     const handleVerify = async () => {
-        if (!code.trim()) {
-            setError('Veuillez saisir un code.');
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-
-        // Simulation d'un délai pour l'UX
+        if (!code.trim()) { setError('Veuillez saisir un code.'); return; }
+        setLoading(true); setError('');
         await new Promise(r => setTimeout(r, 800));
-
         if (code.trim().toUpperCase() === CODE_SECRET) {
-            setSuccess(true);
-            setLoading(false);
-            // Déclencher le téléchargement
-            const link = document.createElement('a');
-            link.href = '/downloads/medcare.apk';
-            link.download = 'MedCare.apk';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            setSuccess(true); setLoading(false);
+            const a = document.createElement('a');
+            a.href = '/downloads/medcare.apk'; a.download = 'MedCare.apk';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         } else {
-            const newAttempts = attempts + 1;
-            setAttempts(newAttempts);
-            setLoading(false);
-            if (newAttempts >= 3) {
-                setError('Trop de tentatives incorrectes. Contactez votre administrateur.');
-            } else {
-                setError(`Code incorrect. ${3 - newAttempts} tentative(s) restante(s).`);
-            }
+            const n = attempts + 1; setAttempts(n); setLoading(false);
+            setError(n >= 3 ? 'Trop de tentatives. Contactez votre administrateur.' : `Code incorrect. ${3 - n} tentative(s) restante(s).`);
             setCode('');
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') handleVerify();
-    };
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-[#1C1C1A]">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-[#e3e3e0] px-6 py-4 dark:border-[#3E3E3A]">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f53003]/10 dark:bg-[#FF4433]/10">
-                            <svg className="h-5 w-5 text-[#f53003] dark:text-[#FF4433]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                        </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(10,10,8,0.75)', backdropFilter: 'blur(14px)' }}>
+            <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl" style={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(255,255,255,0.9)' }}>
+                <div className="px-8 pt-8 pb-8">
+                    <div className="flex items-start justify-between mb-6">
                         <div>
-                            <h3 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Télécharger MedCare APK</h3>
-                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">Application Android HAD</p>
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#f53003,#ff8c6a)' }}>
+                                    <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                </div>
+                                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a18' }}>Télécharger MedCare APK</h3>
+                            </div>
+                            <p style={{ fontSize: 13, color: '#706f6c', fontFamily: 'system-ui,sans-serif', marginLeft: 52 }}>Application Android HAD — accès partenaires</p>
                         </div>
+                        {!success && <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #eee', background: '#f9fafb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg className="h-4 w-4" style={{ color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
                     </div>
-                    {!success && (
-                        <button onClick={onClose} className="rounded-full p-2 text-[#706f6c] hover:bg-[#e3e3e0] dark:text-[#A1A09A] dark:hover:bg-[#3E3E3A]">
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                            </svg>
-                        </button>
-                    )}
-                </div>
-
-                <div className="p-6">
                     {!success ? (
                         <>
-                            {/* Info */}
-                            <div className="mb-6 rounded-lg bg-[#f5f5f3] p-4 dark:bg-[#0F0F0E]">
-                                <div className="flex gap-3">
-                                    <svg className="h-5 w-5 text-[#706f6c] dark:text-[#A1A09A] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
-                                    <div>
-                                        <p className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Accès réservé aux établissements partenaires</p>
-                                        <p className="mt-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">Saisissez le code fourni par votre administrateur pour accéder au téléchargement.</p>
-                                    </div>
-                                </div>
+                            <div style={{ background: '#fafaf9', borderRadius: 16, padding: '14px 18px', marginBottom: 24 }}>
+                                <p style={{ fontSize: 13, color: '#706f6c', fontFamily: 'system-ui,sans-serif', lineHeight: 1.6 }}>Saisissez le code fourni par votre administrateur pour accéder au téléchargement sécurisé.</p>
                             </div>
-
-                            {/* Input code */}
-                            <div className="mb-4">
-                                <label className="mb-2 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
-                                    Code d'accès
-                                </label>
-                                <input
-                                    type="text"
-                                    value={code}
-                                    onChange={e => setCode(e.target.value.toUpperCase())}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder="Ex: XXXXXX0000"
-                                    maxLength={20}
-                                    disabled={attempts >= 3 || loading}
-                                    className={`w-full rounded-lg border px-4 py-3 text-center text-lg font-mono font-bold tracking-widest transition-colors focus:outline-none focus:ring-2 dark:bg-[#0F0F0E] dark:text-[#EDEDEC]
-                                        ${error ? 'border-red-400 bg-red-50 focus:ring-red-200 dark:border-red-500 dark:bg-red-900/10' : 'border-[#e3e3e0] bg-white focus:border-[#f53003] focus:ring-[#f53003]/20 dark:border-[#3E3E3A]'}
-                                        ${attempts >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    autoFocus
-                                />
-                                {error && (
-                                    <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
-                                        <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        {error}
-                                    </div>
-                                )}
+                            <div style={{ marginBottom: 16 }}>
+                                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', fontFamily: 'system-ui,sans-serif', marginBottom: 8 }}>Code d'accès</label>
+                                <input type="text" value={code} onChange={e => setCode(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && handleVerify()}
+                                    placeholder="XXXXXX0000" maxLength={20} disabled={attempts >= 3 || loading} autoFocus
+                                    style={{ width: '100%', borderRadius: 14, border: `1.5px solid ${error ? '#f87171' : '#e5e7eb'}`, background: error ? '#fff5f5' : '#fff', padding: '14px 20px', textAlign: 'center', fontSize: 20, fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.15em', outline: 'none', transition: 'border 0.2s' }}/>
+                                {error && <p style={{ marginTop: 8, fontSize: 12, color: '#ef4444', fontFamily: 'system-ui,sans-serif' }}>{error}</p>}
                             </div>
-
-                            {/* Bouton */}
-                            <button
-                                onClick={handleVerify}
-                                disabled={loading || attempts >= 3 || !code.trim()}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#f53003] px-6 py-3 text-sm font-medium text-white transition-all hover:bg-[#d42a03] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#FF4433]"
-                            >
-                                {loading ? (
-                                    <>
-                                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                        </svg>
-                                        Vérification...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Valider et télécharger
-                                    </>
-                                )}
+                            <button onClick={handleVerify} disabled={loading || attempts >= 3 || !code.trim()}
+                                style={{ width: '100%', padding: '14px', borderRadius: 100, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'system-ui,sans-serif', background: 'linear-gradient(135deg,#f53003,#e02a00)', boxShadow: '0 4px 20px rgba(245,48,3,0.3)', opacity: (!code.trim() || loading || attempts >= 3) ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                                {loading ? 'Vérification…' : 'Valider et télécharger'}
                             </button>
-
-                            <p className="mt-4 text-center text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                Vous n'avez pas de code ?{' '}
-                                <a href="mailto:support@medcare.com" className="text-[#f53003] hover:underline dark:text-[#FF4433]">
-                                    Contacter le support
-                                </a>
-                            </p>
+                            <p style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: '#9ca3af', fontFamily: 'system-ui,sans-serif' }}>Pas de code ? <a href="mailto:support@medcare.com" style={{ color: '#f53003', textDecoration: 'none' }}>Contacter le support</a></p>
                         </>
                     ) : (
-                        /* Succès */
-                        <div className="text-center py-4">
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                                <svg className="h-8 w-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <h4 className="text-lg font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Téléchargement lancé !</h4>
-                            <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                Le fichier <span className="font-mono font-medium text-[#1b1b18] dark:text-[#EDEDEC]">MedCare.apk</span> est en cours de téléchargement.
-                            </p>
-                            <div className="mt-4 rounded-lg bg-blue-50 p-4 text-left dark:bg-blue-900/20">
-                                <p className="text-xs font-medium text-blue-800 dark:text-blue-300 mb-2">Instructions d'installation :</p>
-                                <ol className="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
-                                    <li>Activez "Sources inconnues" dans vos paramètres Android</li>
-                                    <li>Ouvrez le fichier APK téléchargé</li>
-                                    <li>Suivez les instructions d'installation</li>
+                        <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}><svg className="h-8 w-8" style={{ color: '#10b981' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg></div>
+                            <h4 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a18', marginBottom: 8 }}>Téléchargement lancé !</h4>
+                            <p style={{ fontSize: 14, color: '#706f6c', fontFamily: 'system-ui,sans-serif', marginBottom: 20 }}>Le fichier <code style={{ fontFamily: 'monospace', fontWeight: 700, color: '#1a1a18' }}>MedCare.apk</code> est en cours de téléchargement.</p>
+                            <div style={{ background: '#eff6ff', borderRadius: 14, padding: '16px 20px', textAlign: 'left', marginBottom: 24 }}>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8', marginBottom: 8, fontFamily: 'system-ui,sans-serif' }}>Instructions :</p>
+                                <ol style={{ fontSize: 12, color: '#2563eb', fontFamily: 'system-ui,sans-serif', paddingLeft: 16 }}>
+                                    <li style={{ marginBottom: 4 }}>Activez "Sources inconnues" dans les paramètres</li>
+                                    <li style={{ marginBottom: 4 }}>Ouvrez le fichier APK téléchargé</li>
                                     <li>Connectez-vous avec vos identifiants MedCare</li>
                                 </ol>
                             </div>
-                            <button onClick={onClose} className="mt-6 w-full rounded-lg border border-[#e3e3e0] px-6 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:bg-[#3E3E3A]">
-                                Fermer
-                            </button>
+                            <button onClick={onClose} style={{ width: '100%', padding: '13px', borderRadius: 100, border: '1.5px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#374151', fontFamily: 'system-ui,sans-serif' }}>Fermer</button>
                         </div>
                     )}
                 </div>
@@ -182,529 +83,528 @@ function DownloadModal({ onClose }: { onClose: () => void }) {
     );
 }
 
+// ─── Composant principal ──────────────────────────────────────────────────────
+
 export default function Welcome() {
-    const [showDownloadModal, setShowDownloadModal] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [scrollY, setScrollY]    = useState(0);
+    const [navBg, setNavBg]        = useState(false);
+    const [faqOpen, setFaqOpen]    = useState<number | null>(null);
+
+    useEffect(() => {
+        const onScroll = () => { setScrollY(window.scrollY); setNavBg(window.scrollY > 60); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     return (
         <>
-            <Head title="Accueil - Système Hospitalier" />
-            {showDownloadModal && <DownloadModal onClose={() => setShowDownloadModal(false)} />}
+            <Head title="MedCare — Gestion hospitalière moderne" />
+            {showModal && <DownloadModal onClose={() => setShowModal(false)} />}
 
-            <div className="min-h-screen bg-gradient-to-br from-[#FDFDFC] to-[#F5F5F3] dark:from-[#1C1C1A] dark:to-[#0F0F0E]">
-                {/* Navigation */}
-                <nav className="border-b border-[#e3e3e0] bg-white/80 backdrop-blur-sm dark:border-[#3E3E3A] dark:bg-[#1C1C1A]/80 sticky top-0 z-50">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="flex h-16 items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#f53003] to-[#ff6b4a]">
-                                    <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                    </svg>
-                                </div>
-                                <span className="text-xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">MedCare</span>
+            <div style={{ overflowX: 'hidden', fontFamily: "'Georgia','Times New Roman',serif", color: '#1a1a18' }}>
+
+                {/* ══════════════════════════════════════════════════ */}
+                {/* NAVIGATION                                          */}
+                {/* ══════════════════════════════════════════════════ */}
+                <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 40, padding: '0 2rem', transition: 'all 0.4s ease', background: navBg ? 'rgba(255,255,255,0.93)' : 'transparent', backdropFilter: navBg ? 'blur(20px)' : 'none', borderBottom: navBg ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>
+                    <div style={{ maxWidth: 1200, margin: '0 auto', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#f53003,#ff8c6a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <a href="#features" className="hidden md:block text-sm font-medium text-[#706f6c] hover:text-[#f53003] dark:text-[#A1A09A] dark:hover:text-[#FF4433] transition-colors">Fonctionnalités</a>
-                                <a href="#mobile-app" className="hidden md:block text-sm font-medium text-[#706f6c] hover:text-[#f53003] dark:text-[#A1A09A] dark:hover:text-[#FF4433] transition-colors">App Mobile</a>
-                                <a href="#demo" className="hidden md:block text-sm font-medium text-[#706f6c] hover:text-[#f53003] dark:text-[#A1A09A] dark:hover:text-[#FF4433] transition-colors">Démo</a>
-                                <a href="#testimonials" className="hidden md:block text-sm font-medium text-[#706f6c] hover:text-[#f53003] dark:text-[#A1A09A] dark:hover:text-[#FF4433] transition-colors">Témoignages</a>
-                                <a href="#pricing" className="hidden md:block text-sm font-medium text-[#706f6c] hover:text-[#f53003] dark:text-[#A1A09A] dark:hover:text-[#FF4433] transition-colors">Tarifs</a>
-                                <Link href="/login" className="rounded-lg bg-[#f53003] px-6 py-2.5 text-sm font-medium text-white transition-all hover:bg-[#e02a00] hover:shadow-lg dark:bg-[#FF4433] dark:hover:bg-[#ff3322]">
-                                    Se connecter
-                                </Link>
-                            </div>
+                            <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', color: navBg ? '#1a1a18' : '#fff' }}>MedCare</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+                            {[['#features','Fonctionnalités'],['#how-it-works','Comment ça marche'],['#mobile-app','App Mobile'],['#demo','Démo'],['#faq','FAQ']].map(([href, label], i) => (
+                                <a key={i} href={href} style={{ fontSize: 13, color: navBg ? '#555' : 'rgba(255,255,255,0.85)', textDecoration: 'none', transition: 'color 0.2s', fontFamily: 'system-ui,sans-serif', fontWeight: 500, letterSpacing: '0.01em' }}
+                                    onMouseEnter={e => (e.target as HTMLElement).style.color = '#f53003'}
+                                    onMouseLeave={e => (e.target as HTMLElement).style.color = navBg ? '#555' : 'rgba(255,255,255,0.85)'}>
+                                    {label}
+                                </a>
+                            ))}
+                            <Link href="/login" style={{ background: 'linear-gradient(135deg,#f53003,#e02a00)', color: '#fff', padding: '10px 22px', borderRadius: 100, fontSize: 13, fontWeight: 700, textDecoration: 'none', fontFamily: 'system-ui,sans-serif', boxShadow: '0 4px 16px rgba(245,48,3,0.35)', letterSpacing: '0.01em' }}>
+                                Connexion
+                            </Link>
                         </div>
                     </div>
                 </nav>
 
-                {/* Hero Section */}
-                <section className="px-4 py-20 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl">
-                        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-                            <div className="flex flex-col justify-center">
-                                <div className="inline-flex items-center gap-2 rounded-full bg-[#f53003]/10 px-4 py-2 text-sm font-medium text-[#f53003] dark:bg-[#FF4433]/10 dark:text-[#FF4433] w-fit mb-6">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f53003] opacity-75 dark:bg-[#FF4433]"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f53003] dark:bg-[#FF4433]"></span>
-                                    </span>
-                                    Nouveau : Module HAD Mobile
-                                </div>
-                                <h1 className="text-5xl font-bold leading-tight text-[#1b1b18] dark:text-[#EDEDEC] sm:text-6xl">
-                                    Gestion hospitalière{' '}
-                                    <span className="text-[#f53003] dark:text-[#FF4433]">moderne et sécurisée</span>
-                                </h1>
-                                <p className="mt-6 text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                    Une plateforme complète pour optimiser la gestion de votre établissement de santé.
-                                    Simplifiez vos processus et améliorez la qualité des soins.
-                                </p>
-                                <div className="mt-10 flex flex-wrap gap-4">
-                                    <Link href="/login" className="rounded-lg bg-[#f53003] px-8 py-4 text-base font-medium text-white transition-all hover:bg-[#e02a00] hover:shadow-xl dark:bg-[#FF4433] dark:hover:bg-[#ff3322]">
-                                        Commencer maintenant
-                                    </Link>
-                                    <a href="#demo" className="rounded-lg border-2 border-[#e3e3e0] bg-white px-8 py-4 text-base font-medium text-[#1b1b18] transition-all hover:border-[#f53003] hover:text-[#f53003] dark:border-[#3E3E3A] dark:bg-[#1C1C1A] dark:text-[#EDEDEC] dark:hover:border-[#FF4433] dark:hover:text-[#FF4433]">
-                                        Tester la démo
-                                    </a>
-                                </div>
-                                <div className="mt-12 grid grid-cols-3 gap-6">
-                                    <div><div className="text-3xl font-bold text-[#f53003] dark:text-[#FF4433]">500+</div><div className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">Hôpitaux</div></div>
-                                    <div><div className="text-3xl font-bold text-[#f53003] dark:text-[#FF4433]">50K+</div><div className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">Utilisateurs</div></div>
-                                    <div><div className="text-3xl font-bold text-[#f53003] dark:text-[#FF4433]">99.9%</div><div className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">Disponibilité</div></div>
-                                </div>
-                            </div>
-                            <div className="relative">
-                                <div className="overflow-hidden rounded-2xl shadow-2xl">
-                                    <img src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&auto=format&fit=crop" alt="Médecins utilisant la technologie" className="h-full w-full object-cover" />
-                                </div>
-                                <div className="absolute -bottom-6 -right-6 -z-10 h-72 w-72 rounded-full bg-[#f53003]/10 blur-3xl dark:bg-[#FF4433]/10"></div>
-                            </div>
+                {/* ══════════════════════════════════════════════════ */}
+                {/* HERO — Plein écran avec parallax                   */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section style={{ position: 'relative', height: '100vh', minHeight: 720, overflow: 'hidden' }}>
+                    <img src="https://images.unsplash.com/photo-1551076805-e1869033e561?w=1800&auto=format&fit=crop&q=80"
+                        alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: `translateY(${scrollY * 0.3}px)` }}/>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg,rgba(10,10,8,0.78) 0%,rgba(30,10,5,0.55) 60%,rgba(245,48,3,0.18) 100%)' }}/>
+                    <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 24px' }}>
+                        
+                        <h1 style={{ fontSize: 'clamp(44px,7.5vw,88px)', fontWeight: 800, color: '#fff', lineHeight: 1.05, letterSpacing: '-2.5px', maxWidth: 860, marginBottom: 28 }}>
+                            La santé mérite la{' '}
+                            <span style={{ background: 'linear-gradient(135deg,#f53003,#ff8c6a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>meilleure</span>
+                            {' '}technologie
+                        </h1>
+                        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', maxWidth: 540, lineHeight: 1.8, fontFamily: 'system-ui,sans-serif', fontWeight: 400, marginBottom: 48 }}>
+                            Plateforme complète de gestion hospitalière — dossiers patients, tournées HAD, prescriptions, et bien plus. Conçue pour l'Afrique.
+                        </p>
+                        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+                            <Link href="/login" style={{ background: 'linear-gradient(135deg,#f53003,#e02a00)', color: '#fff', padding: '16px 38px', borderRadius: 100, fontSize: 15, fontWeight: 700, textDecoration: 'none', fontFamily: 'system-ui,sans-serif', boxShadow: '0 8px 32px rgba(245,48,3,0.45)', letterSpacing: '0.01em' }}>
+                                Accéder à la plateforme
+                            </Link>
+                            <a href="#how-it-works" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', padding: '16px 38px', borderRadius: 100, fontSize: 15, fontWeight: 500, textDecoration: 'none', fontFamily: 'system-ui,sans-serif', border: '1px solid rgba(255,255,255,0.25)', backdropFilter: 'blur(8px)' }}>
+                                Comment ça marche →
+                            </a>
                         </div>
+                    </div>
+                    {/* Stats bar */}
+                    <div style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)', zIndex: 2, display: 'flex', gap: 2, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 20, backdropFilter: 'blur(20px)', overflow: 'hidden' }}>
+                        {[['500+','Hôpitaux partenaires'],['50 000+','Soignants actifs'],['2M+','Visites enregistrées'],['99.9%','Disponibilité']].map(([v, l], i) => (
+                            <div key={i} style={{ padding: '18px 28px', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>{v}</div>
+                                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontFamily: 'system-ui,sans-serif', marginTop: 3, letterSpacing: '0.02em' }}>{l}</div>
+                            </div>
+                        ))}
                     </div>
                 </section>
 
-                {/* Trust Section */}
-                <section className="px-4 py-12 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl">
-                        <p className="text-center text-sm font-medium text-[#706f6c] dark:text-[#A1A09A] mb-8">ILS NOUS FONT CONFIANCE</p>
-                        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 items-center justify-items-center opacity-50">
-                            <div className="text-2xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">CHU Douala</div>
-                            <div className="text-2xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">Hôpital Central</div>
-                            <div className="text-2xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">Clinique Moderne</div>
-                            <div className="text-2xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">Centre Santé+</div>
-                        </div>
-                    </div>
-                </section>
+                {/* ══════════════════════════════════════════════════ */}
+                {/* TRUST — Partenaires                                 */}
+                {/* ══════════════════════════════════════════════════ */}
+              
 
-                {/* Features Section */}
-                <section id="features" className="bg-white px-4 py-20 dark:bg-[#1C1C1A] sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl">
-                        <div className="text-center">
-                            <h2 className="text-3xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] sm:text-4xl">Fonctionnalités principales</h2>
-                            <p className="mt-4 text-lg text-[#706f6c] dark:text-[#A1A09A]">Tout ce dont vous avez besoin pour gérer efficacement votre établissement</p>
+                {/* ══════════════════════════════════════════════════ */}
+                {/* FEATURES — Grille avec images                       */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section id="features" style={{ padding: '120px 24px', background: '#fafaf9' }}>
+                    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+                            <p style={{ fontSize: 11, letterSpacing: '0.16em', color: '#f53003', fontFamily: 'system-ui,sans-serif', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16 }}>Fonctionnalités</p>
+                            <h2 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, letterSpacing: '-1.5px', lineHeight: 1.05, color: '#1a1a18', maxWidth: 580, margin: '0 auto' }}>
+                                Tout ce dont votre établissement a besoin
+                            </h2>
                         </div>
-                        <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
                             {[
-                                { image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&auto=format&fit=crop", title: "Gestion des patients", description: "Dossiers médicaux électroniques complets et sécurisés pour tous vos patients." },
-                                { image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=400&auto=format&fit=crop", title: "Planification intelligente", description: "Optimisez les rendez-vous et la gestion du personnel en temps réel." },
-                                { image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&auto=format&fit=crop", title: "Rapports & Analyses", description: "Tableaux de bord détaillés pour suivre les performances de votre établissement." },
-                                { image: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&auto=format&fit=crop", title: "Gestion pharmacie", description: "Suivi des stocks et prescriptions médicamenteuses automatisé." },
-                                { image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&auto=format&fit=crop", title: "Facturation simplifiée", description: "Système de facturation intégré avec gestion des assurances." },
-                                { image: "https://images.unsplash.com/photo-1563203369-26f2e4a5ccf7?w=400&auto=format&fit=crop", title: "Sécurité maximale", description: "Cryptage de bout en bout et conformité RGPD garantis." }
-                            ].map((feature, index) => (
-                                <div key={index} className="group overflow-hidden rounded-xl border border-[#e3e3e0] bg-[#FDFDFC] p-6 transition-all hover:shadow-xl dark:border-[#3E3E3A] dark:bg-[#0F0F0E]">
-                                    <div className="mb-4 overflow-hidden rounded-lg">
-                                        <img src={feature.image} alt={feature.title} className="h-48 w-full object-cover transition-transform group-hover:scale-105" />
+                                { img: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&auto=format&fit=crop&q=80', title: 'Dossiers patients', desc: 'Dossiers médicaux électroniques complets. Historique, prescriptions, examens et suivi des soins centralisés.' },
+                                { img: 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=600&auto=format&fit=crop&q=80', title: 'Tournées HAD', desc: 'Planifiez et suivez les visites à domicile. Récurrence intelligente, GPS et validation des soins en temps réel.' },
+                                { img: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=600&auto=format&fit=crop&q=80', title: 'Pharmacie & Stocks', desc: 'Gestion des prescriptions, alertes de rupture de stock et traçabilité complète des médicaments.' },
+                                { img: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop&q=80', title: 'Tableaux de bord', desc: 'Analyses en temps réel, KPIs hospitaliers et rapports exportables pour piloter votre activité efficacement.' },
+                                { img: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&auto=format&fit=crop&q=80', title: 'Facturation intégrée', desc: 'Facturation automatisée, gestion des assurances et suivi des paiements en un seul endroit.' },
+                                { img: 'https://images.unsplash.com/photo-1563203369-26f2e4a5ccf7?w=600&auto=format&fit=crop&q=80', title: 'Sécurité & Conformité', desc: 'Cryptage de bout en bout, journaux d\'audit complets et conformité RGPD pour vos données sensibles.' },
+                            ].map((f, i) => (
+                                <div key={i} style={{ background: '#fff', borderRadius: 24, overflow: 'hidden', border: '1px solid #ebebea', cursor: 'default', transition: 'transform 0.3s,box-shadow 0.3s' }}
+                                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform='translateY(-8px)'; el.style.boxShadow='0 24px 64px rgba(0,0,0,0.1)'; }}
+                                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform='none'; el.style.boxShadow='none'; }}>
+                                    <div style={{ height: 196, overflow: 'hidden' }}>
+                                        <img src={f.img} alt={f.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }}
+                                            onMouseEnter={e => (e.target as HTMLElement).style.transform='scale(1.06)'}
+                                            onMouseLeave={e => (e.target as HTMLElement).style.transform='scale(1)'}/>
                                     </div>
-                                    <h3 className="text-xl font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{feature.title}</h3>
-                                    <p className="mt-2 text-[#706f6c] dark:text-[#A1A09A]">{feature.description}</p>
+                                    <div style={{ padding: '22px 26px 28px' }}>
+                                        <h3 style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.3px', marginBottom: 10, color: '#1a1a18' }}>{f.title}</h3>
+                                        <p style={{ fontSize: 13, color: '#706f6c', lineHeight: 1.7, fontFamily: 'system-ui,sans-serif' }}>{f.desc}</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* ═══════════════════════════════════════════════════ */}
-                {/* SECTION APP MOBILE — MODIFIEE avec bouton download  */}
-                {/* ═══════════════════════════════════════════════════ */}
-                <section id="mobile-app" className="px-4 py-20 sm:px-6 lg:px-8 bg-gradient-to-br from-[#f53003]/5 to-[#ff6b4a]/5 dark:from-[#FF4433]/5 dark:to-[#ff6655]/5">
-                    <div className="mx-auto max-w-7xl">
-                        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-                            <div>
-                                <div className="inline-flex items-center gap-2 rounded-full bg-[#f53003] px-4 py-2 text-sm font-medium text-white mb-6">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                    Application Mobile HAD
-                                </div>
-                                <h2 className="text-4xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] sm:text-5xl">
-                                    Suivez vos patients{' '}
-                                    <span className="text-[#f53003] dark:text-[#FF4433]">sur le terrain</span>
-                                </h2>
-                                <p className="mt-6 text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                    Module HAD (Hospitalisation À Domicile) : un outil performant pour la gestion
-                                    mobile de vos patients. Accédez à tous les dossiers, suivez les soins en temps réel
-                                    et synchronisez automatiquement avec votre système central.
-                                </p>
-
-                                <div className="mt-8 space-y-4">
-                                    {[
-                                        { icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z", title: "Accès hors ligne", description: "Consultez et modifiez les dossiers même sans connexion internet" },
-                                        { icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", title: "Synchronisation temps réel", description: "Mise à jour automatique des données dès la reconnexion" },
-                                        { icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01", title: "Saisie intelligente", description: "Formulaires adaptatifs et reconnaissance vocale intégrée" },
-                                        { icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z", title: "Géolocalisation", description: "Optimisez vos tournées avec le GPS intégré" }
-                                    ].map((feature, index) => (
-                                        <div key={index} className="flex gap-4 p-4 rounded-lg bg-white dark:bg-[#1C1C1A] border border-[#e3e3e0] dark:border-[#3E3E3A]">
-                                            <div className="flex-shrink-0">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f53003]/10 dark:bg-[#FF4433]/10">
-                                                    <svg className="h-5 w-5 text-[#f53003] dark:text-[#FF4433]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={feature.icon} />
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{feature.title}</h3>
-                                                <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">{feature.description}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* ── Boutons téléchargement MODIFIES ── */}
-                                <div className="mt-10 flex flex-wrap gap-4">
-                                    <button className="flex items-center gap-3 rounded-lg bg-[#1b1b18] px-6 py-3 text-white transition-all hover:bg-[#2b2b28] dark:bg-white dark:text-[#1b1b18] dark:hover:bg-gray-100">
-                                        <svg className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                                        </svg>
-                                        <div className="text-left">
-                                            <div className="text-xs">Télécharger sur</div>
-                                            <div className="text-sm font-semibold">App Store</div>
-                                        </div>
-                                    </button>
-                                    <button className="flex items-center gap-3 rounded-lg bg-[#1b1b18] px-6 py-3 text-white transition-all hover:bg-[#2b2b28] dark:bg-white dark:text-[#1b1b18] dark:hover:bg-gray-100">
-                                        <svg className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 010 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.802 8.99l-2.303 2.303-8.635-8.635z"/>
-                                        </svg>
-                                        <div className="text-left">
-                                            <div className="text-xs">Disponible sur</div>
-                                            <div className="text-sm font-semibold">Google Play</div>
-                                        </div>
-                                    </button>
-
-                                    {/* ── NOUVEAU : bouton téléchargement APK direct ── */}
-                                    <button
-                                        onClick={() => setShowDownloadModal(true)}
-                                        className="flex items-center gap-3 rounded-lg border-2 border-[#f53003] px-6 py-3 text-[#f53003] transition-all hover:bg-[#f53003] hover:text-white dark:border-[#FF4433] dark:text-[#FF4433] dark:hover:bg-[#FF4433] dark:hover:text-white group"
-                                    >
-                                        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                        </svg>
-                                        <div className="text-left">
-                                            <div className="text-xs opacity-75">Téléchargement direct</div>
-                                            <div className="text-sm font-semibold">Fichier APK</div>
-                                        </div>
-                                    </button>
-                                </div>
-
-                                {/* Note APK */}
-                                <p className="mt-3 flex items-center gap-1.5 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                    <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
-                                    Le téléchargement direct APK nécessite un code d'accès fourni par votre établissement.
-                                </p>
-                            </div>
-
-                            {/* Mockup mobile */}
-                            <div className="relative">
-                                <div className="relative mx-auto w-[300px]">
-                                    <div className="relative z-10 rounded-[3rem] border-[14px] border-[#1b1b18] dark:border-white bg-[#1b1b18] dark:bg-white shadow-2xl">
-                                        <div className="overflow-hidden rounded-[2.3rem]">
-                                            <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&auto=format&fit=crop" alt="Application mobile HAD" className="w-full h-[600px] object-cover" />
-                                        </div>
-                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-6 bg-[#1b1b18] dark:bg-white rounded-b-2xl"></div>
-                                    </div>
-                                    <div className="absolute -left-8 top-20 rounded-lg bg-white dark:bg-[#1C1C1A] p-4 shadow-xl border border-[#e3e3e0] dark:border-[#3E3E3A] max-w-[150px] animate-float">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-                                                <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                            </div>
-                                            <span className="text-xs font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Visite terminée</span>
-                                        </div>
-                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">Patient Martin B.</p>
-                                    </div>
-                                    <div className="absolute -right-8 bottom-32 rounded-lg bg-white dark:bg-[#1C1C1A] p-4 shadow-xl border border-[#e3e3e0] dark:border-[#3E3E3A] max-w-[150px] animate-float" style={{animationDelay: '1s'}}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="h-8 w-8 rounded-full bg-[#f53003] dark:bg-[#FF4433] flex items-center justify-center">
-                                                <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            </div>
-                                            <span className="text-xs font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Prochaine visite</span>
-                                        </div>
-                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">14:30 - Dupont L.</p>
-                                    </div>
-                                    <div className="absolute -bottom-10 -right-10 -z-10 h-64 w-64 rounded-full bg-[#f53003]/20 blur-3xl dark:bg-[#FF4433]/20"></div>
-                                    <div className="absolute -top-10 -left-10 -z-10 h-64 w-64 rounded-full bg-[#ff6b4a]/20 blur-3xl dark:bg-[#ff6655]/20"></div>
-                                </div>
-                            </div>
+                {/* ══════════════════════════════════════════════════ */}
+                {/* HOW IT WORKS — Étapes sur fond image sombre         */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section id="how-it-works" style={{ position: 'relative', padding: '120px 24px', overflow: 'hidden' }}>
+                    <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1800&auto=format&fit=crop&q=80"
+                        alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(5,5,3,0.9),rgba(20,8,3,0.85))' }}/>
+                    <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 80 }}>
+                            <p style={{ fontSize: 11, letterSpacing: '0.16em', color: '#ff8c6a', fontFamily: 'system-ui,sans-serif', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16 }}>Comment ça marche</p>
+                            <h2 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, letterSpacing: '-1.5px', color: '#fff', lineHeight: 1.1 }}>
+                                Opérationnel en 3 étapes
+                            </h2>
                         </div>
-
-                        {/* Stats app */}
-                        <div className="mt-20 grid grid-cols-2 gap-6 md:grid-cols-4">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 32, position: 'relative' }}>
+                            {/* Ligne de connexion */}
+                            <div style={{ position: 'absolute', top: 48, left: '16.66%', right: '16.66%', height: 1, background: 'linear-gradient(90deg,transparent,rgba(245,48,3,0.5),transparent)', zIndex: 0 }}/>
                             {[
-                                { value: '15K+', label: 'Téléchargements' },
-                                { value: '4.9★', label: 'Note moyenne' },
-                                { value: '200K+', label: 'Visites/mois' },
-                                { value: '98%', label: 'Satisfaction' },
-                            ].map((s, i) => (
-                                <div key={i} className="text-center p-6 rounded-xl bg-white dark:bg-[#1C1C1A] border border-[#e3e3e0] dark:border-[#3E3E3A]">
-                                    <div className="text-3xl font-bold text-[#f53003] dark:text-[#FF4433]">{s.value}</div>
-                                    <div className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">{s.label}</div>
+                                { num: '01', title: 'Configuration initiale', desc: 'Notre équipe vous accompagne dans la configuration complète de votre établissement. Import de vos données, paramétrage des services et formation du personnel inclus.', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+                                { num: '02', title: 'Formation des équipes', desc: 'Sessions de formation adaptées à chaque profil utilisateur — médecins, infirmiers, administrateurs. Des tutoriels vidéo et une documentation complète sont disponibles.', icon: 'M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z' },
+                                { num: '03', title: 'Déploiement & Suivi', desc: 'Mise en production progressive avec suivi en temps réel. Notre équipe reste disponible pour toute question et les mises à jour sont déployées automatiquement.', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+                            ].map((step, i) => (
+                                <div key={i} style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+                                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(245,48,3,0.15)', border: '1.5px solid rgba(245,48,3,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px', backdropFilter: 'blur(10px)' }}>
+                                        <svg className="h-8 w-8" style={{ color: '#ff8c6a' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={step.icon}/></svg>
+                                    </div>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#f53003', letterSpacing: '0.1em', fontFamily: 'system-ui,sans-serif', marginBottom: 12 }}>{step.num}</div>
+                                    <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: '-0.3px', marginBottom: 16 }}>{step.title}</h3>
+                                    <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, fontFamily: 'system-ui,sans-serif' }}>{step.desc}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Demo Section */}
-                <section id="demo" className="bg-white px-4 py-20 dark:bg-[#1C1C1A] sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-5xl">
-                        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-                            <div>
-                                <div className="inline-flex items-center gap-2 rounded-full bg-green-500/10 px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 mb-6">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Accès gratuit immédiat
-                                </div>
-                                <h2 className="text-3xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] sm:text-4xl">
-                                    Testez MedCare <span className="text-[#f53003] dark:text-[#FF4433]">gratuitement</span>
-                                </h2>
-                                <p className="mt-6 text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                    Découvrez toutes les fonctionnalités de notre plateforme avec un compte de démonstration.
-                                </p>
-                                <div className="mt-8 space-y-4">
-                                    {["Accès complet à toutes les fonctionnalités","Données de test pré-remplies","Interface réelle de production","Aucune carte bancaire requise"].map((f, i) => (
-                                        <div key={i} className="flex items-center gap-3">
-                                            <svg className="h-6 w-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                            <span className="text-[#706f6c] dark:text-[#A1A09A]">{f}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="mt-10">
-                                    <Link href="login" className="inline-flex items-center gap-2 rounded-lg bg-[#f53003] px-8 py-4 text-base font-medium text-white transition-all hover:bg-[#e02a00] hover:shadow-xl dark:bg-[#FF4433]">
-                                        Accéder à la démo
-                                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                                    </Link>
-                                </div>
+                {/* ══════════════════════════════════════════════════ */}
+                {/* VALEURS — 2 colonnes : image + texte                */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section style={{ padding: '120px 24px', background: '#fff' }}>
+                    <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+                        <div style={{ position: 'relative' }}>
+                            <div style={{ borderRadius: 32, overflow: 'hidden', aspectRatio: '4/3', boxShadow: '0 40px 100px rgba(0,0,0,0.12)' }}>
+                                <img src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=800&auto=format&fit=crop&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
                             </div>
-                            <div className="relative">
-                                <div className="rounded-2xl border-2 border-[#e3e3e0] bg-gradient-to-br from-[#FDFDFC] to-white p-8 shadow-2xl dark:border-[#3E3E3A] dark:from-[#1C1C1A] dark:to-[#0F0F0E]">
-                                    <div className="mb-6">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#f53003]/10 dark:bg-[#FF4433]/10">
-                                                <svg className="h-6 w-6 text-[#f53003] dark:text-[#FF4433]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-                                            </div>
-                                            <h3 className="text-xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">Identifiants de démo</h3>
-                                        </div>
-                                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Utilisez ces identifiants pour vous connecter</p>
-                                    </div>
-                                    <div className="space-y-4">
-                                        {[{ label: 'Email', value: 'client@test.com' }, { label: 'Mot de passe', value: 'password' }].map((item, i) => (
-                                            <div key={i} className="rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#1C1C1A]">
-                                                <div className="text-xs font-medium text-[#706f6c] dark:text-[#A1A09A] mb-2">{item.label}</div>
-                                                <div className="flex items-center justify-between">
-                                                    <code className="text-sm font-mono font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{item.value}</code>
-                                                    <button onClick={() => navigator.clipboard.writeText(item.value)} className="rounded p-1.5 text-[#706f6c] hover:bg-[#e3e3e0] hover:text-[#f53003] dark:text-[#A1A09A] dark:hover:bg-[#3E3E3A]" title="Copier">
-                                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
-                                        <div className="flex gap-3">
-                                            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            <p className="text-xs text-blue-800 dark:text-blue-300">Ces identifiants donnent accès à un environnement de test complet avec des données fictives.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="absolute -bottom-6 -right-6 -z-10 h-48 w-48 rounded-full bg-[#f53003]/10 blur-3xl dark:bg-[#FF4433]/10"></div>
+                            {/* Stat card */}
+                            <div style={{ position: 'absolute', bottom: -20, right: -20, background: '#fff', borderRadius: 20, padding: '20px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.12)', border: '1px solid #eee' }}>
+                                <div style={{ fontSize: 36, fontWeight: 800, color: '#f53003', letterSpacing: '-1px', lineHeight: 1 }}>40%</div>
+                                <div style={{ fontSize: 13, color: '#706f6c', fontFamily: 'system-ui,sans-serif', marginTop: 4 }}>d'efficacité en plus</div>
+                                <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'system-ui,sans-serif', marginTop: 2 }}>dès le 1er mois</div>
                             </div>
                         </div>
-                    </div>
-                </section>
-
-                {/* Benefits Section */}
-                <section className="px-4 py-20 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl">
-                        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-                            <div className="relative order-2 lg:order-1">
-                                <div className="overflow-hidden rounded-2xl shadow-2xl">
-                                    <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format&fit=crop" alt="Dashboard analytique" className="h-full w-full object-cover" />
-                                </div>
-                                <div className="absolute -top-6 -left-6 -z-10 h-72 w-72 rounded-full bg-[#f53003]/10 blur-3xl dark:bg-[#FF4433]/10"></div>
-                            </div>
-                            <div className="order-1 lg:order-2">
-                                <h2 className="text-3xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] sm:text-4xl">Pourquoi choisir MedCare ?</h2>
-                                <p className="mt-4 text-lg text-[#706f6c] dark:text-[#A1A09A]">Une solution complète qui s'adapte à vos besoins</p>
-                                <div className="mt-8 space-y-6">
-                                    {[
-                                        { icon: "M13 10V3L4 14h7v7l9-11h-7z", title: "Rapide et performant", description: "Interface ultra-réactive pour une productivité maximale" },
-                                        { icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z", title: "Sécurité renforcée", description: "Vos données protégées selon les standards les plus élevés" },
-                                        { icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z", title: "Support dédié", description: "Une équipe disponible 24/7 pour vous accompagner" },
-                                        { icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15", title: "Mises à jour régulières", description: "Nouvelles fonctionnalités ajoutées en permanence" }
-                                    ].map((b, i) => (
-                                        <div key={i} className="flex gap-4">
-                                            <div className="flex-shrink-0">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#f53003]/10 dark:bg-[#FF4433]/10">
-                                                    <svg className="h-6 w-6 text-[#f53003] dark:text-[#FF4433]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={b.icon} /></svg>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{b.title}</h3>
-                                                <p className="mt-1 text-sm text-[#706f6c] dark:text-[#A1A09A]">{b.description}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Testimonials */}
-                <section id="testimonials" className="bg-white px-4 py-20 dark:bg-[#1C1C1A] sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl">
-                        <div className="text-center">
-                            <h2 className="text-3xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] sm:text-4xl">Ce que disent nos clients</h2>
-                            <p className="mt-4 text-lg text-[#706f6c] dark:text-[#A1A09A]">Des professionnels de santé satisfaits à travers le pays</p>
-                        </div>
-                        <div className="mt-16 grid gap-8 md:grid-cols-3">
-                            {[
-                                { name: "Dr. Marie Kouam", role: "Directrice Médicale, CHU Douala", content: "MedCare a transformé notre façon de travailler. La gestion des dossiers patients est devenue si simple et intuitive.", rating: 5 },
-                                { name: "Jean-Paul Mbarga", role: "Administrateur, Clinique Moderne", content: "Un gain de temps considérable dans la gestion administrative. L'équipe support est exceptionnelle.", rating: 5 },
-                                { name: "Dr. Sophie Nkongo", role: "Chef de Service, Hôpital Central", content: "La solution la plus complète du marché. Nous avons augmenté notre efficacité de 40% en 6 mois.", rating: 5 }
-                            ].map((t, i) => (
-                                <div key={i} className="rounded-xl border border-[#e3e3e0] bg-[#FDFDFC] p-8 dark:border-[#3E3E3A] dark:bg-[#0F0F0E]">
-                                    <div className="flex gap-1 mb-4">
-                                        {[...Array(t.rating)].map((_, j) => (
-                                            <svg key={j} className="h-5 w-5 text-[#f53003] dark:text-[#FF4433]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                                        ))}
-                                    </div>
-                                    <p className="text-[#706f6c] dark:text-[#A1A09A] italic">"{t.content}"</p>
-                                    <div className="mt-6 flex items-center gap-3">
-                                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#f53003] to-[#ff6b4a] flex items-center justify-center text-white font-bold">
-                                            {t.name.split(' ').map(n => n[0]).join('')}
+                        <div>
+                            <p style={{ fontSize: 11, letterSpacing: '0.16em', color: '#f53003', fontFamily: 'system-ui,sans-serif', fontWeight: 700, textTransform: 'uppercase', marginBottom: 20 }}>Pourquoi MedCare</p>
+                            <h2 style={{ fontSize: 'clamp(32px,4vw,48px)', fontWeight: 800, letterSpacing: '-1.5px', lineHeight: 1.1, color: '#1a1a18', marginBottom: 24 }}>
+                                Pensé par des soignants,<br/>pour des soignants
+                            </h2>
+                            <p style={{ fontSize: 16, color: '#706f6c', lineHeight: 1.8, fontFamily: 'system-ui,sans-serif', marginBottom: 44 }}>
+                                MedCare est né d'une collaboration étroite avec des équipes hospitalières africaines. Chaque fonctionnalité répond à un besoin réel du terrain, identifié directement avec les professionnels de santé.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                {[
+                                    ['Interface intuitive', 'Prise en main en moins de 30 minutes, sans formation intensive.'],
+                                    ['Conçu pour l\'Afrique', 'Fonctionne avec une connexion limitée, adapté aux réalités locales.'],
+                                    ['Support humain', 'Une équipe francophone disponible 24h/24 et 7j/7.'],
+                                    ['Mises à jour continues', 'Nouvelles fonctionnalités déployées chaque mois selon vos retours.'],
+                                ].map(([title, sub], i) => (
+                                    <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff5f5', border: '1px solid #ffd0c8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                                            <svg className="h-4 w-4" style={{ color: '#f53003' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
                                         </div>
                                         <div>
-                                            <div className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{t.name}</div>
-                                            <div className="text-sm text-[#706f6c] dark:text-[#A1A09A]">{t.role}</div>
+                                            <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a18', fontFamily: 'system-ui,sans-serif', marginBottom: 3 }}>{title}</div>
+                                            <div style={{ fontSize: 13, color: '#706f6c', fontFamily: 'system-ui,sans-serif', lineHeight: 1.6 }}>{sub}</div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Pricing */}
-                <section id="pricing" className="px-4 py-20 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl">
-                        <div className="text-center">
-                            <h2 className="text-3xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] sm:text-4xl">Tarifs transparents</h2>
-                            <p className="mt-4 text-lg text-[#706f6c] dark:text-[#A1A09A]">Choisissez le plan adapté à la taille de votre établissement</p>
-                        </div>
-                        <div className="mt-16 grid gap-8 lg:grid-cols-3">
-                            {[
-                                { name: "Starter", price: "49 000", period: "/mois", description: "Idéal pour les petites cliniques", features: ["Jusqu'à 50 patients","2 utilisateurs","Gestion basique","Support email","Mises à jour incluses"], popular: false },
-                                { name: "Professional", price: "149 000", period: "/mois", description: "Pour les établissements en croissance", features: ["Patients illimités","10 utilisateurs","Toutes les fonctionnalités","App mobile HAD incluse","Support prioritaire 24/7","Formation incluse","API accès complet"], popular: true },
-                                { name: "Enterprise", price: "Sur devis", period: "", description: "Solution sur mesure pour hôpitaux", features: ["Tout illimité","Utilisateurs illimités","Personnalisation complète","Account manager dédié","SLA garantie 99.9%","Déploiement sur site"], popular: false }
-                            ].map((plan, i) => (
-                                <div key={i} className={`relative rounded-2xl border p-8 ${plan.popular ? 'border-[#f53003] bg-white shadow-2xl dark:border-[#FF4433] dark:bg-[#1C1C1A] scale-105' : 'border-[#e3e3e0] bg-white dark:border-[#3E3E3A] dark:bg-[#1C1C1A]'}`}>
-                                    {plan.popular && <div className="absolute -top-4 left-1/2 -translate-x-1/2"><span className="rounded-full bg-gradient-to-r from-[#f53003] to-[#ff6b4a] px-4 py-1 text-sm font-medium text-white">Le plus populaire</span></div>}
-                                    <div className="text-center">
-                                        <h3 className="text-xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">{plan.name}</h3>
-                                        <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">{plan.description}</p>
-                                        <div className="mt-6"><span className="text-4xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">{plan.price}</span>{plan.period && <span className="text-[#706f6c] dark:text-[#A1A09A]">{plan.period}</span>}</div>
+                {/* ══════════════════════════════════════════════════ */}
+                {/* APP MOBILE — Image + fonctionnalités               */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section id="mobile-app" style={{ padding: '120px 24px', background: '#fafaf9' }}>
+                    <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+                        <div>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#fff5f5', border: '1px solid #ffd0c8', borderRadius: 100, padding: '8px 16px', marginBottom: 28 }}>
+                                <svg className="h-4 w-4" style={{ color: '#f53003' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                <span style={{ fontSize: 12, color: '#f53003', fontFamily: 'system-ui,sans-serif', fontWeight: 700, letterSpacing: '0.04em' }}>Application Mobile HAD</span>
+                            </div>
+                            <h2 style={{ fontSize: 'clamp(32px,4vw,48px)', fontWeight: 800, letterSpacing: '-1.5px', lineHeight: 1.1, color: '#1a1a18', marginBottom: 20 }}>
+                                Suivez vos patients<br/>sur le terrain
+                            </h2>
+                            <p style={{ fontSize: 16, color: '#706f6c', lineHeight: 1.8, fontFamily: 'system-ui,sans-serif', marginBottom: 40 }}>
+                                Module HAD complet pour la gestion mobile de vos soins à domicile. Interface optimisée pour le terrain, même sans connexion stable.
+                            </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 40 }}>
+                                {[
+                                    ['Accès hors ligne', 'Consultez les dossiers sans internet'],
+                                    ['GPS intégré', 'Optimisez vos tournées quotidiennes'],
+                                    ['Synchro auto', 'Données synchronisées à la reconnexion'],
+                                    ['Saisie vocale', 'Dictée des observations terrain'],
+                                    ['Notifications', 'Alertes en temps réel sur vos cas'],
+                                    ['Dark mode', 'Interface adaptée aux conditions lumineuses'],
+                                ].map(([title, sub], i) => (
+                                    <div key={i} style={{ padding: '16px 18px', borderRadius: 14, background: '#fff', border: '1px solid #eee' }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a18', fontFamily: 'system-ui,sans-serif', marginBottom: 3 }}>{title}</div>
+                                        <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'system-ui,sans-serif', lineHeight: 1.5 }}>{sub}</div>
                                     </div>
-                                    <ul className="mt-8 space-y-4">
-                                        {plan.features.map((f, j) => (
-                                            <li key={j} className="flex items-center gap-3">
-                                                <svg className="h-5 w-5 flex-shrink-0 text-[#f53003] dark:text-[#FF4433]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                <span className="text-sm text-[#706f6c] dark:text-[#A1A09A]">{f}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <button className={`mt-8 w-full rounded-lg px-6 py-3 text-sm font-medium transition-all ${plan.popular ? 'bg-[#f53003] text-white hover:bg-[#e02a00] dark:bg-[#FF4433]' : 'border-2 border-[#e3e3e0] bg-white text-[#1b1b18] hover:border-[#f53003] hover:text-[#f53003] dark:border-[#3E3E3A] dark:bg-[#0F0F0E] dark:text-[#EDEDEC]'}`}>
-                                        {plan.price === "Sur devis" ? "Nous contacter" : "Commencer l'essai gratuit"}
+                                ))}
+                            </div>
+                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                {[['App Store',<svg key="ios" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>,'Télécharger sur'],
+                                 ['Google Play',<svg key="gp" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 010 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.802 8.99l-2.303 2.303-8.635-8.635z"/></svg>,'Disponible sur']].map(([label, icon, sub], i) => (
+                                    <button key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#1a1a18', color: '#fff', padding: '13px 20px', borderRadius: 14, border: 'none', cursor: 'pointer', fontFamily: 'system-ui,sans-serif' }}>
+                                        {icon as React.ReactNode}
+                                        <div><div style={{ fontSize: 10, opacity: 0.6 }}>{sub as string}</div><div style={{ fontSize: 13, fontWeight: 700 }}>{label as string}</div></div>
                                     </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* FAQ */}
-                <section className="bg-white px-4 py-20 dark:bg-[#1C1C1A] sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-4xl">
-                        <div className="text-center mb-16">
-                            <h2 className="text-3xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] sm:text-4xl">Questions fréquentes</h2>
-                            <p className="mt-4 text-lg text-[#706f6c] dark:text-[#A1A09A]">Tout ce que vous devez savoir sur MedCare</p>
-                        </div>
-                        <div className="space-y-4">
-                            {[
-                                { question: "Comment démarrer avec MedCare ?", answer: "Créez simplement un compte, choisissez votre plan et notre équipe vous accompagnera dans la configuration initiale. Une formation complète est incluse." },
-                                { question: "L'application mobile HAD fonctionne-t-elle hors ligne ?", answer: "Oui, l'app mobile HAD permet de consulter et modifier les dossiers patients même sans connexion. Les données se synchronisent automatiquement dès que vous êtes reconnecté." },
-                                { question: "Mes données sont-elles sécurisées ?", answer: "Absolument. Nous utilisons un cryptage de bout en bout, des serveurs sécurisés et sommes conformes aux normes RGPD et HIPAA." },
-                                { question: "Puis-je essayer avant d'acheter ?", answer: "Oui, nous offrons un essai gratuit de 14 jours sans engagement ni carte bancaire requise." },
-                                { question: "Le support technique est-il disponible en français ?", answer: "Oui, notre équipe support francophone est disponible 24/7 par chat, email et téléphone." },
-                                { question: "Puis-je changer de plan plus tard ?", answer: "Bien sûr, vous pouvez upgrader ou downgrader votre plan à tout moment selon vos besoins." }
-                            ].map((faq, i) => (
-                                <details key={i} className="group rounded-lg border border-[#e3e3e0] bg-[#FDFDFC] dark:border-[#3E3E3A] dark:bg-[#0F0F0E]">
-                                    <summary className="flex cursor-pointer items-center justify-between p-6 font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">
-                                        {faq.question}
-                                        <svg className="h-5 w-5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                    </summary>
-                                    <div className="px-6 pb-6 text-[#706f6c] dark:text-[#A1A09A]">{faq.answer}</div>
-                                </details>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* CTA */}
-                <section className="px-4 py-20 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-4xl">
-                        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#f53003] to-[#ff6b4a] p-12 text-center shadow-2xl dark:from-[#FF4433] dark:to-[#ff6655]">
-                            <div className="relative z-10">
-                                <h2 className="text-3xl font-bold text-white sm:text-4xl">Prêt à transformer votre hôpital ?</h2>
-                                <p className="mt-4 text-lg text-white/90">Rejoignez des centaines d'établissements qui nous font confiance</p>
-                                <Link href="/login" className="mt-8 inline-block rounded-lg bg-white px-8 py-4 text-base font-medium text-[#f53003] transition-all hover:bg-gray-50 hover:shadow-xl dark:text-[#FF4433]">
-                                    Accéder à la plateforme
-                                </Link>
+                                ))}
+                                <button onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'transparent', color: '#f53003', padding: '13px 20px', borderRadius: 14, border: '2px solid #f53003', cursor: 'pointer', fontFamily: 'system-ui,sans-serif', transition: 'all 0.2s' }}
+                                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background='#f53003'; el.style.color='#fff'; }}
+                                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background='transparent'; el.style.color='#f53003'; }}>
+                                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    <div><div style={{ fontSize: 10, opacity: 0.75 }}>Direct</div><div style={{ fontSize: 13, fontWeight: 700 }}>Fichier APK</div></div>
+                                </button>
                             </div>
-                            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
-                            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
+                        </div>
+                        <div style={{ position: 'relative' }}>
+                            <div style={{ borderRadius: 32, overflow: 'hidden', aspectRatio: '4/5', boxShadow: '0 40px 100px rgba(0,0,0,0.15)' }}>
+                                <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format&fit=crop&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                            </div>
+                            <div style={{ position: 'absolute', bottom: 32, right: -24, background: '#fff', borderRadius: 20, padding: '16px 20px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', border: '1px solid #eee', minWidth: 180 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#10b981,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg></div>
+                                    <div><div style={{ fontSize: 12, fontWeight: 700, color: '#1a1a18', fontFamily: 'system-ui,sans-serif' }}>Visite validée</div><div style={{ fontSize: 11, color: '#706f6c', fontFamily: 'system-ui,sans-serif' }}>Patient Martin B.</div></div>
+                                </div>
+                            </div>
+                            <div style={{ position: 'absolute', top: 32, left: -24, background: '#fff', borderRadius: 20, padding: '16px 20px', boxShadow: '0 16px 48px rgba(0,0,0,0.12)', border: '1px solid #eee' }}>
+                                <div style={{ fontSize: 11, color: '#706f6c', fontFamily: 'system-ui,sans-serif', marginBottom: 4 }}>Prochaine visite</div>
+                                <div style={{ fontSize: 24, fontWeight: 800, color: '#f53003', letterSpacing: '-0.5px', lineHeight: 1 }}>14:30</div>
+                                <div style={{ fontSize: 12, color: '#1a1a18', fontFamily: 'system-ui,sans-serif', marginTop: 3 }}>Dupont L. — Ch. 12</div>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Footer */}
-                <footer className="border-t border-[#e3e3e0] bg-white px-4 py-12 dark:border-[#3E3E3A] dark:bg-[#1C1C1A] sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl">
-                        <div className="grid gap-8 md:grid-cols-4">
-                            <div className="md:col-span-2">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#f53003] to-[#ff6b4a]">
-                                        <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                {/* ══════════════════════════════════════════════════ */}
+                {/* DÉMO — Split image / formulaire                     */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section id="demo" style={{ overflow: 'hidden' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 640 }}>
+                        <div style={{ position: 'relative', overflow: 'hidden' }}>
+                            <img src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&auto=format&fit=crop&q=80" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg,rgba(5,5,3,0.72),rgba(245,48,3,0.18))' }}/>
+                            <div style={{ position: 'relative', zIndex: 2, padding: '80px 60px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                                <p style={{ fontSize: 11, letterSpacing: '0.16em', color: '#ff8c6a', fontFamily: 'system-ui,sans-serif', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16 }}>Démo gratuite</p>
+                                <h2 style={{ fontSize: 44, fontWeight: 800, color: '#fff', letterSpacing: '-1.5px', lineHeight: 1.1, marginBottom: 16 }}>Testez sans<br/>engagement</h2>
+                                <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, fontFamily: 'system-ui,sans-serif', marginBottom: 32 }}>
+                                    Accédez à un environnement complet avec données de test. Aucune carte bancaire requise.
+                                </p>
+                                {['Accès complet à toutes les fonctionnalités','Données de test pré-remplies','Interface de production réelle'].map((f, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                        <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(245,48,3,0.3)', border: '1px solid rgba(245,48,3,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <svg className="h-3 w-3" style={{ color: '#ff8c6a' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                                        </div>
+                                        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: 'system-ui,sans-serif' }}>{f}</span>
                                     </div>
-                                    <span className="text-xl font-bold text-[#1b1b18] dark:text-[#EDEDEC]">MedCare</span>
-                                </div>
-                                <p className="mt-4 text-sm text-[#706f6c] dark:text-[#A1A09A]">La solution complète pour la gestion hospitalière moderne. Sécurisée, intuitive et performante.</p>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Produit</h4>
-                                <ul className="mt-4 space-y-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                    {[["#features","Fonctionnalités"],["#mobile-app","App Mobile HAD"],["#demo","Démo"],["#pricing","Tarifs"],["#","Sécurité"]].map(([href, label]) => (
-                                        <li key={label}><a href={href} className="hover:text-[#f53003] dark:hover:text-[#FF4433]">{label}</a></li>
-                                    ))}
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Support</h4>
-                                <ul className="mt-4 space-y-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                    {["Documentation","Contact","FAQ"].map(label => (
-                                        <li key={label}><a href="#" className="hover:text-[#f53003] dark:hover:text-[#FF4433]">{label}</a></li>
-                                    ))}
-                                </ul>
+                                ))}
                             </div>
                         </div>
-                        <div className="mt-12 border-t border-[#e3e3e0] pt-8 text-center text-sm text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]">
-                            <p>&copy; 2024 MedCare. Tous droits réservés.</p>
+                        <div style={{ background: '#fafaf9', padding: '80px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.5px', color: '#1a1a18', marginBottom: 8 }}>Identifiants de démonstration</h3>
+                            <p style={{ fontSize: 14, color: '#706f6c', fontFamily: 'system-ui,sans-serif', marginBottom: 36, lineHeight: 1.6 }}>
+                                Un environnement de test complet avec des données fictives — aucune donnée réelle n'est affectée.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
+                                {[{ label: 'Adresse e-mail', value: 'client@test.com' }, { label: 'Mot de passe', value: 'password' }].map((item, i) => (
+                                    <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '16px 20px' }}>
+                                        <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', fontFamily: 'system-ui,sans-serif', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>{item.label}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <code style={{ fontSize: 16, fontFamily: 'monospace', fontWeight: 700, color: '#1a1a18', letterSpacing: '0.02em' }}>{item.value}</code>
+                                            <button onClick={() => navigator.clipboard.writeText(item.value)} style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <svg className="h-4 w-4" style={{ color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <Link href="/login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'linear-gradient(135deg,#f53003,#e02a00)', color: '#fff', padding: '16px 32px', borderRadius: 100, fontSize: 15, fontWeight: 700, textDecoration: 'none', fontFamily: 'system-ui,sans-serif', boxShadow: '0 8px 24px rgba(245,48,3,0.3)' }}>
+                                Accéder à la démo
+                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ══════════════════════════════════════════════════ */}
+                {/* SÉCURITÉ — fond image clair                         */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section style={{ position: 'relative', padding: '120px 24px', overflow: 'hidden' }}>
+                    <img src="https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=1800&auto=format&fit=crop&q=80"
+                        alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.93)' }}/>
+                    <div style={{ position: 'relative', zIndex: 2, maxWidth: 1100, margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+                            <p style={{ fontSize: 11, letterSpacing: '0.16em', color: '#f53003', fontFamily: 'system-ui,sans-serif', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16 }}>Sécurité & Conformité</p>
+                            <h2 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, letterSpacing: '-1.5px', color: '#1a1a18', lineHeight: 1.1, maxWidth: 520, margin: '0 auto' }}>
+                                Vos données sont en sécurité
+                            </h2>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }}>
+                            {[
+                                { icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', title: 'Cryptage AES-256', desc: 'Toutes les données sont chiffrées au repos et en transit.' },
+                                { icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', title: 'Conformité RGPD', desc: 'Respect des réglementations européennes et africaines.' },
+                                { icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', title: 'Journaux d\'audit', desc: 'Traçabilité complète de toutes les actions utilisateurs.' },
+                                { icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', title: 'Sauvegardes auto', desc: 'Backup quotidien avec rétention de 90 jours garantie.' },
+                            ].map((item, i) => (
+                                <div key={i} style={{ background: '#fff', borderRadius: 20, padding: '32px 24px', border: '1px solid #eee', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}>
+                                    <div style={{ width: 56, height: 56, borderRadius: 16, background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                                        <svg className="h-7 w-7" style={{ color: '#f53003' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon}/></svg>
+                                    </div>
+                                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a18', marginBottom: 10 }}>{item.title}</h3>
+                                    <p style={{ fontSize: 13, color: '#706f6c', lineHeight: 1.7, fontFamily: 'system-ui,sans-serif' }}>{item.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ══════════════════════════════════════════════════ */}
+                {/* TÉMOIGNAGES — fond image sombre                    */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section id="testimonials" style={{ position: 'relative', padding: '120px 24px', overflow: 'hidden' }}>
+                    <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1800&auto=format&fit=crop&q=80"
+                        alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,3,0.9)' }}/>
+                    <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+                            <p style={{ fontSize: 11, letterSpacing: '0.16em', color: '#f53003', fontFamily: 'system-ui,sans-serif', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16 }}>Témoignages</p>
+                            <h2 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, letterSpacing: '-1.5px', color: '#fff', lineHeight: 1.1 }}>Ce que disent nos clients</h2>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 24 }}>
+                            {[
+                                { name: 'Dr. Marie Kouam', role: 'Directrice Médicale, CHU Douala', text: 'MedCare a transformé notre façon de travailler. La gestion des dossiers est devenue simple et intuitive pour toute l\'équipe médicale.' },
+                                { name: 'Jean-Paul Mbarga', role: 'Administrateur, Clinique Moderne', text: 'Un gain de temps considérable dans la gestion administrative. L\'équipe support est exceptionnelle et toujours disponible pour nous accompagner.' },
+                                { name: 'Dr. Sophie Nkongo', role: 'Chef de Service, Hôpital Central', text: 'La solution la plus complète du marché. Nous avons augmenté notre efficacité de 40% en 6 mois. Je recommande à tous les établissements.' },
+                            ].map((t, i) => (
+                                <div key={i} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '32px', backdropFilter: 'blur(12px)' }}>
+                                    <div style={{ display: 'flex', gap: 3, marginBottom: 20 }}>
+                                        {[...Array(5)].map((_, j) => <svg key={j} className="h-4 w-4" style={{ color: '#f53003' }} fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>)}
+                                    </div>
+                                    <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, fontStyle: 'italic', marginBottom: 28, fontFamily: 'system-ui,sans-serif' }}>"{t.text}"</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#f53003,#ff8c6a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>{t.name.split(' ').map(n => n[0]).join('')}</div>
+                                        <div><div style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'system-ui,sans-serif' }}>{t.name}</div><div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontFamily: 'system-ui,sans-serif', marginTop: 2 }}>{t.role}</div></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Chiffres */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20, marginTop: 60 }}>
+                            {[['15 000+','Téléchargements app'],['4.9 ★','Note moyenne'],['200 000+','Visites / mois'],['98%','Satisfaction client']].map(([v, l], i) => (
+                                <div key={i} style={{ textAlign: 'center', padding: '28px 20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, backdropFilter: 'blur(8px)' }}>
+                                    <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1 }}>{v}</div>
+                                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'system-ui,sans-serif', marginTop: 8 }}>{l}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ══════════════════════════════════════════════════ */}
+                {/* FAQ — fond clair avec image subtile                 */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section id="faq" style={{ position: 'relative', padding: '120px 24px', overflow: 'hidden' }}>
+                    <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1800&auto=format&fit=crop&q=80"
+                        alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(253,253,252,0.96)' }}/>
+                    <div style={{ position: 'relative', zIndex: 2, maxWidth: 760, margin: '0 auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+                            <p style={{ fontSize: 11, letterSpacing: '0.16em', color: '#f53003', fontFamily: 'system-ui,sans-serif', fontWeight: 700, textTransform: 'uppercase', marginBottom: 16 }}>FAQ</p>
+                            <h2 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, letterSpacing: '-1.5px', color: '#1a1a18', lineHeight: 1.1 }}>Questions fréquentes</h2>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {[
+                                { q: 'Comment démarrer avec MedCare ?', a: 'Créez un compte, choisissez votre plan et notre équipe vous accompagnera dans la configuration initiale. Une formation complète est incluse sans frais supplémentaires.' },
+                                { q: 'L\'application mobile HAD fonctionne-t-elle hors ligne ?', a: 'Oui, l\'app mobile HAD permet de consulter et modifier les dossiers patients même sans connexion. Les données se synchronisent automatiquement dès la reconnexion.' },
+                                { q: 'Mes données sont-elles sécurisées ?', a: 'Absolument. Nous utilisons un cryptage AES-256 de bout en bout, des serveurs sécurisés en Afrique et sommes conformes aux normes RGPD.' },
+                                { q: 'Puis-je migrer mes données existantes ?', a: 'Oui, notre équipe technique prend en charge la migration complète de vos données depuis n\'importe quel système existant, sans interruption de service.' },
+                                { q: 'Combien de temps dure la formation ?', a: 'La formation de base dure 2 jours pour les utilisateurs standard. Des formations avancées par rôle (médecin, infirmier, administrateur) sont disponibles sur demande.' },
+                                { q: 'Le support technique est-il disponible en français ?', a: 'Oui, notre équipe support francophone est disponible 24h/24 et 7j/7 par chat, email et téléphone pour tous les plans.' },
+                                { q: 'Puis-je utiliser MedCare sur tablette et smartphone ?', a: 'MedCare est entièrement responsive et disponible sur navigateur web (desktop, tablette), et via l\'application native Android et iOS pour le module HAD.' },
+                                { q: 'Y a-t-il un contrat d\'engagement minimum ?', a: 'Non, vous pouvez commencer avec un abonnement mensuel sans engagement. Des tarifs préférentiels sont disponibles pour les engagements annuels.' },
+                            ].map((item, i) => (
+                                <div key={i} style={{ borderRadius: 18, border: '1px solid #eee', background: '#fff', overflow: 'hidden', transition: 'box-shadow 0.2s', boxShadow: faqOpen === i ? '0 8px 32px rgba(0,0,0,0.06)' : 'none' }}>
+                                    <button onClick={() => setFaqOpen(faqOpen === i ? null : i)} style={{ width: '100%', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                                        <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a18', fontFamily: 'system-ui,sans-serif', lineHeight: 1.5, paddingRight: 16 }}>{item.q}</span>
+                                        <div style={{ width: 28, height: 28, borderRadius: 8, background: faqOpen === i ? '#f53003' : '#f5f5f3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
+                                            <svg className="h-4 w-4" style={{ color: faqOpen === i ? '#fff' : '#706f6c', transform: faqOpen === i ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+                                        </div>
+                                    </button>
+                                    {faqOpen === i && (
+                                        <div style={{ padding: '0 24px 20px', fontSize: 14, color: '#706f6c', lineHeight: 1.8, fontFamily: 'system-ui,sans-serif', borderTop: '1px solid #f0f0ee' }}>
+                                            <div style={{ paddingTop: 16 }}>{item.a}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ══════════════════════════════════════════════════ */}
+                {/* CTA FINAL — Image pleine avec overlay rouge         */}
+                {/* ══════════════════════════════════════════════════ */}
+                <section style={{ position: 'relative', padding: '140px 24px', overflow: 'hidden' }}>
+                    <img src="https://images.unsplash.com/photo-1504813184591-01572f98c85f?w=1800&auto=format&fit=crop&q=80"
+                        alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}/>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(245,48,3,0.9),rgba(180,20,0,0.95))' }}/>
+                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 680, margin: '0 auto' }}>
+                        <h2 style={{ fontSize: 'clamp(36px,6vw,64px)', fontWeight: 800, color: '#fff', letterSpacing: '-2px', lineHeight: 1.05, marginBottom: 24 }}>
+                            Rejoignez 500+<br/>établissements
+                        </h2>
+                        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, fontFamily: 'system-ui,sans-serif', marginBottom: 48 }}>
+                            Commencez votre transformation digitale dès aujourd'hui. Essai gratuit de 14 jours, sans engagement, sans carte bancaire.
+                        </p>
+                        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <Link href="/login" style={{ background: '#fff', color: '#f53003', padding: '18px 44px', borderRadius: 100, fontSize: 16, fontWeight: 800, textDecoration: 'none', fontFamily: 'system-ui,sans-serif', boxShadow: '0 12px 40px rgba(0,0,0,0.25)', letterSpacing: '0.01em' }}>
+                                Accéder à la plateforme
+                            </Link>
+                            <a href="#demo" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', padding: '18px 44px', borderRadius: 100, fontSize: 16, fontWeight: 600, textDecoration: 'none', fontFamily: 'system-ui,sans-serif', border: '1.5px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(8px)' }}>
+                                Voir la démo →
+                            </a>
+                        </div>
+                        <p style={{ marginTop: 28, fontSize: 13, color: 'rgba(255,255,255,0.55)', fontFamily: 'system-ui,sans-serif' }}>
+                            Aucune carte bancaire · Annulation à tout moment · Support 24/7 inclus
+                        </p>
+                    </div>
+                </section>
+
+                {/* ── Footer ─────────────────────────────────────────── */}
+                <footer style={{ background: '#0a0a08', padding: '72px 24px 36px' }}>
+                    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1fr 1fr', gap: 48, marginBottom: 60 }}>
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#f53003,#ff8c6a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                                    </div>
+                                    <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>MedCare</span>
+                                </div>
+                                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.8, maxWidth: 300, fontFamily: 'system-ui,sans-serif', marginBottom: 24 }}>
+                                    La solution complète pour la gestion hospitalière moderne en Afrique. Sécurisée, intuitive et performante.
+                                </p>
+                                <div style={{ display: 'flex', gap: 10 }}>
+                                    {['M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z',
+                                       'M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z M4 6a2 2 0 100-4 2 2 0 000 4z'].map((path, i) => (
+                                        <a key={i} href="#" style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <svg className="h-4 w-4" style={{ color: 'rgba(255,255,255,0.5)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={path}/></svg>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                            {[
+                                { title: 'Produit', links: [['#features','Fonctionnalités'],['#how-it-works','Comment ça marche'],['#mobile-app','App Mobile HAD'],['#demo','Démo'],['#faq','FAQ']] },
+                                { title: 'Entreprise', links: [['#','À propos'],['#','Blog'],['#','Carrières'],['#','Contact']] },
+                                { title: 'Support', links: [['#','Documentation'],['#','API Reference'],['#','Statut'],['#','Sécurité']] },
+                            ].map((col, i) => (
+                                <div key={i}>
+                                    <h4 style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20, fontFamily: 'system-ui,sans-serif' }}>{col.title}</h4>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        {col.links.map(([href, label]) => (
+                                            <a key={label} href={href} style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontFamily: 'system-ui,sans-serif', transition: 'color 0.2s' }}
+                                                onMouseEnter={e => (e.target as HTMLElement).style.color = '#fff'}
+                                                onMouseLeave={e => (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.4)'}>
+                                                {label}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'system-ui,sans-serif' }}>&copy; 2025 MedCare. Tous droits réservés.</p>
+                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'system-ui,sans-serif' }}>Conçu pour les soignants d'Afrique 🌍</p>
                         </div>
                     </div>
                 </footer>
             </div>
 
             <style>{`
-                @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-                .animate-float { animation: float 3s ease-in-out infinite; }
+                @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.5)} }
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                html { scroll-behavior: smooth; }
             `}</style>
         </>
     );

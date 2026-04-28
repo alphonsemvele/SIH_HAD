@@ -29,7 +29,7 @@ class PatientUpdateRequest extends FormRequest
             'ville' => ['nullable', 'string', 'max:100'],
             'quartier' => ['nullable', 'string', 'max:100'],
             'profession' => ['nullable', 'string', 'max:100'],
-            'situation_matrimoniale' => ['nullable', 'in:Célibataire,Marié(e),Divorcé(e),Veuf(ve)'],
+            'situation_matrimoniale' => ['nullable', 'in:celibataire,marie,divorce,veuf'],
             'groupe_sanguin' => ['nullable', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
             'allergies' => ['nullable'],
             'antecedents_medicaux' => ['nullable', 'array'],

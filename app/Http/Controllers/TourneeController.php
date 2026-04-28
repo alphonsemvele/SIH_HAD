@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\TourneeStoreRequest;
+use App\Http\Requests\TourneeUpdateRequest;
 use App\Models\Service;
 use App\Models\Tournee;
 use App\Models\VisiteHad;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,29 +20,50 @@ class TourneeController extends Controller
 
     public function index(Request $request): Response
     {
-        $tournees = Tournee::with([
+        $tab = $request->input('tab', 'aujourdhui');
+
+        $query = Tournee::with([
             'soignant:id,name',
             'service:id,nom,etage',
-            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,age')
+            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,date_naissance')
                                          ->orderBy('ordre'),
         ])
-            ->when($request->service_id,  fn ($q) => $q->where('service_id',  $request->service_id))
-            ->when($request->soignant_id, fn ($q) => $q->where('soignant_id', $request->soignant_id))
-            ->when($request->statut,      fn ($q) => $q->where('statut',      $request->statut))
-            ->whereDate('date', today())        // par défaut : tournées du jour
-            ->orderBy('heure_debut_prevue')
-            ->get()
-            ->map(fn (Tournee $t) => $this->formatTournee($t));
+        ->when($request->service_id,  fn ($q) => $q->where('service_id',  $request->service_id))
+        ->when($request->soignant_id, fn ($q) => $q->where('soignant_id', $request->soignant_id))
+        ->when($request->statut,      fn ($q) => $q->where('statut',      $request->statut));
 
+        $tournees = match ($tab) {
+            'planning'   => $query->deLaSemaine(
+                                Carbon::parse($request->input('semaine', now()->startOfWeek()))
+                            )
+                            ->orderBy('date')
+                            ->orderBy('heure_debut_prevue')
+                            ->get(),
+
+            'historique' => $query->where('date', '<', today())
+                            ->orderBy('date', 'desc')
+                            ->orderBy('heure_debut_prevue')
+                            ->limit(100)
+                            ->get(),
+
+            default      => $query->whereDate('date', today())
+                            ->orderBy('heure_debut_prevue')
+                            ->get(),
+        };
+
+        $formatted = $tournees->map(fn (Tournee $t) => $this->formatTournee($t));
+
+        $statsQuery = Tournee::whereDate('date', today());
         $stats = [
-            'tournees_jour'       => $tournees->count(),
-            'en_cours'            => $tournees->where('statut', 'en_cours')->count(),
-            'terminees'           => $tournees->where('statut', 'terminee')->count(),
-            'patients_a_visiter'  => $tournees->sum('patients_total'),
-            'patients_vus'        => $tournees->sum('patients_vus'),
+            'tournees_jour'      => $statsQuery->count(),
+            'en_cours'           => $statsQuery->clone()->where('statut', 'en_cours')->count(),
+            'terminees'          => $statsQuery->clone()->where('statut', 'terminee')->count(),
+            'patients_a_visiter' => (clone $statsQuery)->withCount('visiteHads')->get()->sum('visite_hads_count'),
+            'patients_vus'       => (clone $statsQuery)->withCount('visitesEffectuees')->get()->sum('visites_effectuees_count'),
         ];
+
         return Inertia::render('dashboard/tourne', [
-            'tournees'  => $tournees,
+            'tournees'  => $formatted,
             'stats'     => $stats,
             'services'  => Service::actif()->select('id', 'nom', 'etage')->get()->map(fn ($s) => [
                 'id'               => $s->id,
@@ -48,34 +72,33 @@ class TourneeController extends Controller
                 'patients_actuels' => $s->occupationsActives()->count(),
             ]),
             'soignants' => User::select('id', 'name')->orderBy('name')->get(),
-            'filters'   => $request->only(['service_id', 'soignant_id', 'statut']),
+            'filters'   => $request->only(['service_id', 'soignant_id', 'statut', 'tab']),
         ]);
     }
 
     // ── Store ─────────────────────────────────────────────────────────────
 
-    public function store(Request $request): RedirectResponse
+    public function store(TourneeStoreRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'soignant_id'         => 'required|exists:users,id',
-            'service_id'          => 'required|exists:services,id',
-            'date'                => 'required|date',
-            'heure_debut_prevue'  => 'required|date_format:H:i',
-            'heure_fin_prevue'    => 'nullable|date_format:H:i|after:heure_debut_prevue',
-            'vehicule'            => 'nullable|string|max:30',
-            'type'                => 'required|in:complete,cas_critiques,chambre_specifique',
-            'notes'               => 'nullable|string|max:2000',
-        ]);
+        $validated = $request->validated();
 
         $tournee = Tournee::create($validated);
 
-        // Si c'est une tournée "complète", on pré-remplit les visites
-        // avec tous les patients actifs du service, triés par chambre/lit.
         if ($tournee->type === Tournee::TYPE_COMPLETE) {
             $this->genererVisites($tournee);
         }
 
-        return redirect()->back()->with('success', 'Tournée planifiée avec succès.');
+        $nbOccurrences = 0;
+        if ($tournee->estRecurrente()) {
+            $nbOccurrences = $tournee->genererOccurrences();
+        }
+
+        $msg = 'Tournée planifiée avec succès.';
+        if ($nbOccurrences > 0) {
+            $msg .= " {$nbOccurrences} occurrence(s) générée(s) automatiquement.";
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 
     // ── Show ──────────────────────────────────────────────────────────────
@@ -85,8 +108,9 @@ class TourneeController extends Controller
         $tournee->load([
             'soignant:id,name',
             'service:id,nom,etage',
-            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,age')
+            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,date_naissance')
                                          ->orderBy('ordre'),
+            'parent:id,date,heure_debut_prevue',
         ]);
 
         return Inertia::render('Tournees/Show', [
@@ -96,34 +120,45 @@ class TourneeController extends Controller
 
     // ── Update ────────────────────────────────────────────────────────────
 
-    public function update(Request $request, Tournee $tournee): RedirectResponse
+    public function update(TourneeUpdateRequest $request, Tournee $tournee): RedirectResponse
     {
-        $this->authorize('update', $tournee);
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'soignant_id'        => 'sometimes|exists:users,id',
-            'service_id'         => 'sometimes|exists:services,id',
-            'date'               => 'sometimes|date',
-            'heure_debut_prevue' => 'sometimes|date_format:H:i',
-            'heure_fin_prevue'   => 'nullable|date_format:H:i',
-            'vehicule'           => 'nullable|string|max:30',
-            'notes'              => 'nullable|string|max:2000',
-        ]);
+        $recurrenceChangee = isset($validated['recurrence'])
+            && $validated['recurrence'] !== $tournee->recurrence
+            && $validated['recurrence'] !== Tournee::REC_UNIQUE;
 
         $tournee->update($validated);
+
+        if ($recurrenceChangee) {
+            $tournee->occurrences()
+                    ->where('date', '>', today())
+                    ->where('statut', Tournee::STATUT_PLANIFIEE)
+                    ->delete();
+
+            $nb = $tournee->genererOccurrences();
+            return redirect()->back()->with('success', "Tournée mise à jour. {$nb} occurrence(s) régénérée(s).");
+        }
 
         return redirect()->back()->with('success', 'Tournée mise à jour.');
     }
 
     // ── Destroy ───────────────────────────────────────────────────────────
 
-    public function destroy(Tournee $tournee): RedirectResponse
+    public function destroy(Request $request, Tournee $tournee): RedirectResponse
     {
         abort_if(
             $tournee->statut === Tournee::STATUT_EN_COURS,
             403,
             'Impossible de supprimer une tournée en cours.'
         );
+
+        if ($request->boolean('supprimer_occurrences') && $tournee->estRecurrente()) {
+            $tournee->occurrences()
+                    ->where('date', '>=', today())
+                    ->where('statut', Tournee::STATUT_PLANIFIEE)
+                    ->delete();
+        }
 
         $tournee->delete();
 
@@ -132,9 +167,13 @@ class TourneeController extends Controller
 
     // ── Actions métier ────────────────────────────────────────────────────
 
-    /** POST /tournees/{tournee}/demarrer */
     public function demarrer(Tournee $tournee): RedirectResponse
     {
+        // ✅ Idempotent : déjà en cours → on passe sans erreur
+        if ($tournee->statut === Tournee::STATUT_EN_COURS) {
+            return redirect()->back();
+        }
+
         abort_if(
             $tournee->statut !== Tournee::STATUT_PLANIFIEE,
             403,
@@ -146,13 +185,18 @@ class TourneeController extends Controller
         return redirect()->back()->with('success', 'Tournée démarrée.');
     }
 
-    /** POST /tournees/{tournee}/terminer */
     public function terminer(Tournee $tournee): RedirectResponse
     {
+        // ✅ Idempotent : déjà terminée → on passe sans erreur
+        if ($tournee->statut === Tournee::STATUT_TERMINEE) {
+            return redirect()->back();
+        }
+
+        // Annulée → impossible
         abort_if(
-            !in_array($tournee->statut, [Tournee::STATUT_PLANIFIEE, Tournee::STATUT_EN_COURS]),
+            $tournee->statut === Tournee::STATUT_ANNULEE,
             403,
-            'Cette tournée ne peut pas être terminée.'
+            'Impossible de terminer une tournée annulée.'
         );
 
         $tournee->terminer();
@@ -160,9 +204,13 @@ class TourneeController extends Controller
         return redirect()->back()->with('success', 'Tournée terminée.');
     }
 
-    /** POST /tournees/{tournee}/suspendre */
     public function suspendre(Tournee $tournee): RedirectResponse
     {
+        // ✅ Idempotent : déjà planifiée (suspendue) → on passe sans erreur
+        if ($tournee->statut === Tournee::STATUT_PLANIFIEE) {
+            return redirect()->back();
+        }
+
         abort_if(
             $tournee->statut !== Tournee::STATUT_EN_COURS,
             403,
@@ -174,7 +222,6 @@ class TourneeController extends Controller
         return redirect()->back()->with('success', 'Tournée suspendue.');
     }
 
-    /** POST /tournees/{tournee}/annuler */
     public function annuler(Request $request, Tournee $tournee): RedirectResponse
     {
         abort_if(
@@ -182,6 +229,11 @@ class TourneeController extends Controller
             403,
             'Impossible d\'annuler une tournée déjà terminée.'
         );
+
+        // ✅ Idempotent : déjà annulée → on passe sans erreur
+        if ($tournee->statut === Tournee::STATUT_ANNULEE) {
+            return redirect()->back();
+        }
 
         $raison = $request->validate(['raison' => 'nullable|string|max:500'])['raison'] ?? '';
         $tournee->annuler($raison);
@@ -191,11 +243,14 @@ class TourneeController extends Controller
 
     // ── Visites ───────────────────────────────────────────────────────────
 
-    /** POST /tournees/{tournee}/visites/{visite}/valider */
     public function validerVisite(Request $request, Tournee $tournee, VisiteHad $visite): RedirectResponse
     {
         abort_if($visite->tournee_id !== $tournee->id, 404);
-        abort_if($visite->visite_at !== null, 403, 'Cette visite a déjà été validée.');
+
+        // ✅ Idempotent : visite déjà validée → on passe sans erreur
+        if ($visite->visite_at !== null) {
+            return redirect()->back();
+        }
 
         $validated = $request->validate([
             'observations'   => 'nullable|string|max:3000',
@@ -208,7 +263,6 @@ class TourneeController extends Controller
 
         $visite->valider($validated);
 
-        // Si tous les patients ont été visités → terminer automatiquement
         if ($tournee->visiteHads()->whereNull('visite_at')->doesntExist()) {
             $tournee->terminer();
             return redirect()->back()->with('success', 'Dernière visite validée. Tournée terminée automatiquement.');
@@ -219,30 +273,31 @@ class TourneeController extends Controller
 
     // ── Helpers privés ────────────────────────────────────────────────────
 
-    /**
-     * Transforme un modèle Tournee en tableau pour le frontend.
-     * Ajoute les champs calculés attendus par le composant React.
-     */
     private function formatTournee(Tournee $t): array
     {
         return [
             'id'                     => $t->id,
             'soignant_id'            => $t->soignant_id,
             'service_id'             => $t->service_id,
-            'date'                   => $t->date->format('d/m/Y'),
+            'date'                   => $t->date->format('Y-m-d'),
             'vehicule'               => $t->vehicule,
-            'heure_debut_prevue'     => $t->heure_debut_prevue,
-            'heure_fin_prevue'       => $t->heure_fin_prevue,
+            'heure_debut_prevue'     => $t->heure_debut_prevue?->format('H:i'),
+            'heure_fin_prevue'       => $t->heure_fin_prevue?->format('H:i'),
             'heure_debut_effective'  => $t->heure_debut_effective?->format('H:i'),
             'heure_fin_effective'    => $t->heure_fin_effective?->format('H:i'),
+            'heure_debut_2'          => $t->heure_debut_2?->format('H:i'),
+            'heure_debut_3'          => $t->heure_debut_3?->format('H:i'),
             'kilometres'             => $t->kilometres,
             'type'                   => $t->type,
             'notes'                  => $t->notes,
             'statut'                 => $t->statut,
-            // Calculés
+            'recurrence'             => $t->recurrence,
+            'jours_actifs'           => $t->jours_actifs ?? [],
+            'frequence_journaliere'  => $t->frequence_journaliere ?? 1,
+            'date_fin_recurrence'    => $t->date_fin_recurrence?->format('Y-m-d'),
+            'recurrence_parent_id'   => $t->recurrence_parent_id,
             'patients_total'         => $t->visiteHads->count(),
             'patients_vus'           => $t->visiteHads->whereNotNull('visite_at')->count(),
-            // Relations
             'soignant'               => ['id' => $t->soignant->id, 'name' => $t->soignant->name],
             'service'                => ['id' => $t->service->id, 'nom' => $t->service->nom, 'etage' => $t->service->etage],
             'visite_hads'            => $t->visiteHads->map(fn (VisiteHad $v) => [
@@ -266,36 +321,34 @@ class TourneeController extends Controller
                     'nom'    => $v->patient->nom,
                     'prenom' => $v->patient->prenom,
                     'sexe'   => $v->patient->sexe,
-                    'age'    => $v->patient->age,
+                    'age'    => $v->patient->date_naissance
+                                    ? Carbon::parse($v->patient->date_naissance)->age
+                                    : null,
                 ],
             ])->values()->all(),
         ];
     }
 
-    /**
-     * Génère automatiquement les VisiteHad pour une tournée "complète"
-     * à partir des occupations actives du service.
-     */
     private function genererVisites(Tournee $tournee): void
     {
         $occupations = $tournee->service
             ->occupationsActives()
-            ->with('patient:id,nom,prenom,sexe,age', 'lit:id,numero,chambre')
+            ->with('patient:id,nom,prenom,sexe,date_naissance', 'lit:id,numero,chambre')
             ->orderBy('chambre')
             ->orderBy('lit_id')
             ->get();
 
-        $visites = $occupations->map(fn ($occupation, $index) => [
-            'tournee_id'             => $tournee->id,
-            'patient_id'             => $occupation->patient_id,
-            'ordre'                  => $index + 1,
-            'priorite'               => 'normal',
-            'chambre'                => $occupation->lit->chambre ?? '',
-            'lit'                    => $occupation->lit->numero  ?? '',
-            'diagnostic'             => $occupation->diagnostic_principal,
-            'jours_hospitalisation'  => $occupation->created_at->diffInDays(now()),
-            'created_at'             => now(),
-            'updated_at'             => now(),
+        $visites = $occupations->map(fn ($occ, $index) => [
+            'tournee_id'            => $tournee->id,
+            'patient_id'            => $occ->patient_id,
+            'ordre'                 => $index + 1,
+            'priorite'              => 'normal',
+            'chambre'               => $occ->lit->chambre ?? '',
+            'lit'                   => $occ->lit->numero  ?? '',
+            'diagnostic'            => $occ->diagnostic_principal,
+            'jours_hospitalisation' => $occ->created_at->diffInDays(now()),
+            'created_at'            => now(),
+            'updated_at'            => now(),
         ])->all();
 
         VisiteHad::insert($visites);

@@ -285,13 +285,13 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                         className="w-full rounded-lg border border-[#e3e3e0] bg-white py-2.5 pl-10 pr-4 text-sm text-[#1b1b18] placeholder-[#A1A09A] focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC] dark:focus:border-[#FF4433] dark:focus:ring-[#FF4433]"
                     />
                     <svg className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A1A09A]" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                 </form>
 
                 {/* Filters & Add Button */}
                 <div className="flex items-center gap-3">
-                    <select 
+                    <select
                         value={statutFilter}
                         onChange={(e) => handleStatutFilterChange(e.target.value)}
                         className="rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm text-[#1b1b18] focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]"
@@ -306,7 +306,7 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                         className="flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#d42a03] dark:bg-[#FF4433] dark:hover:bg-[#e63d2d]"
                     >
                         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                            <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
                         Nouveau patient
                     </button>
@@ -387,8 +387,8 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                                                     title="Voir le dossier"
                                                 >
                                                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                                                        <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                                                        <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
                                                     </svg>
                                                 </button>
                                                 {/* Bouton Éditer */}
@@ -398,8 +398,8 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                                                     title="Modifier"
                                                 >
                                                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                                                        <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                                        <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                        <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                 </button>
                                                 {/* Bouton Supprimer */}
@@ -409,8 +409,8 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                                                     title="Supprimer"
                                                 >
                                                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                                                        <path d="M3 6H5H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                                        <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <path d="M3 6H5H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                        <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
                                                 </button>
                                             </div>
@@ -433,13 +433,12 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                                 <Link
                                     key={index}
                                     href={link.url || '#'}
-                                    className={`rounded-lg px-3 py-2 text-sm transition-colors ${
-                                        link.active
+                                    className={`rounded-lg px-3 py-2 text-sm transition-colors ${link.active
                                             ? 'bg-[#f53003] font-medium text-white'
                                             : link.url
-                                            ? 'border border-[#e3e3e0] text-[#706f6c] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#A1A09A] dark:hover:bg-[#1C1C1A]'
-                                            : 'cursor-not-allowed border border-[#e3e3e0] text-[#A1A09A] opacity-50 dark:border-[#3E3E3A]'
-                                    }`}
+                                                ? 'border border-[#e3e3e0] text-[#706f6c] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#A1A09A] dark:hover:bg-[#1C1C1A]'
+                                                : 'cursor-not-allowed border border-[#e3e3e0] text-[#A1A09A] opacity-50 dark:border-[#3E3E3A]'
+                                        }`}
                                     preserveState
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
@@ -584,8 +583,8 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                                 className="flex items-center gap-2 rounded-lg bg-[#f53003] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03] dark:bg-[#FF4433] dark:hover:bg-[#e63d2d]"
                             >
                                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-                                    <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10217 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                                 Modifier
                             </button>
@@ -657,11 +656,10 @@ export default function Patients({ patients, stats, filters, statuts }: Props) {
                                 {statuts.map((statut) => (
                                     <label
                                         key={statut}
-                                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors ${
-                                            statutForm.data.statut === statut
+                                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors ${statutForm.data.statut === statut
                                                 ? 'border-[#f53003] bg-[#fff2f2] dark:border-[#FF4433] dark:bg-[#1D0002]'
                                                 : 'border-[#e3e3e0] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:hover:bg-[#1C1C1A]'
-                                        }`}
+                                            }`}
                                     >
                                         <input
                                             type="radio"
@@ -749,11 +747,10 @@ function PatientFormModal({ title, subtitle, form, statuts, onSubmit, onClose, s
                                     type="text"
                                     value={form.data.nom}
                                     onChange={(e) => form.setData('nom', e.target.value)}
-                                    className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 dark:bg-[#0a0a0a] dark:text-[#EDEDEC] ${
-                                        form.errors.nom 
-                                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                                    className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 dark:bg-[#0a0a0a] dark:text-[#EDEDEC] ${form.errors.nom
+                                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                                             : 'border-[#e3e3e0] focus:border-[#f53003] focus:ring-[#f53003] dark:border-[#3E3E3A]'
-                                    }`}
+                                        }`}
                                 />
                                 {form.errors.nom && <p className="mt-1 text-xs text-red-500">{form.errors.nom}</p>}
                             </div>
@@ -765,11 +762,10 @@ function PatientFormModal({ title, subtitle, form, statuts, onSubmit, onClose, s
                                     type="text"
                                     value={form.data.prenom}
                                     onChange={(e) => form.setData('prenom', e.target.value)}
-                                    className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 dark:bg-[#0a0a0a] dark:text-[#EDEDEC] ${
-                                        form.errors.prenom 
-                                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                                    className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 dark:bg-[#0a0a0a] dark:text-[#EDEDEC] ${form.errors.prenom
+                                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                                             : 'border-[#e3e3e0] focus:border-[#f53003] focus:ring-[#f53003] dark:border-[#3E3E3A]'
-                                    }`}
+                                        }`}
                                 />
                                 {form.errors.prenom && <p className="mt-1 text-xs text-red-500">{form.errors.prenom}</p>}
                             </div>
@@ -794,11 +790,10 @@ function PatientFormModal({ title, subtitle, form, statuts, onSubmit, onClose, s
                                     type="date"
                                     value={form.data.date_naissance}
                                     onChange={(e) => form.setData('date_naissance', e.target.value)}
-                                    className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 dark:bg-[#0a0a0a] dark:text-[#EDEDEC] ${
-                                        form.errors.date_naissance 
-                                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                                    className={`w-full rounded-lg border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 dark:bg-[#0a0a0a] dark:text-[#EDEDEC] ${form.errors.date_naissance
+                                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                                             : 'border-[#e3e3e0] focus:border-[#f53003] focus:ring-[#f53003] dark:border-[#3E3E3A]'
-                                    }`}
+                                        }`}
                                 />
                                 {form.errors.date_naissance && <p className="mt-1 text-xs text-red-500">{form.errors.date_naissance}</p>}
                             </div>
@@ -857,10 +852,10 @@ function PatientFormModal({ title, subtitle, form, statuts, onSubmit, onClose, s
                                     className="w-full rounded-lg border border-[#e3e3e0] px-4 py-2.5 text-sm focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]"
                                 >
                                     <option value="">Non renseigné</option>
-                                    <option value="Célibataire">Célibataire</option>
-                                    <option value="Marié(e)">Marié(e)</option>
-                                    <option value="Divorcé(e)">Divorcé(e)</option>
-                                    <option value="Veuf(ve)">Veuf(ve)</option>
+                                    <option value="celibataire">Célibataire</option>
+                                    <option value="marie">Marié(e)</option>
+                                    <option value="divorce">Divorcé(e)</option>
+                                    <option value="veuf">Veuf(ve)</option>
                                 </select>
                             </div>
                         </div>
@@ -1074,8 +1069,8 @@ function PatientFormModal({ title, subtitle, form, statuts, onSubmit, onClose, s
                             {form.processing ? (
                                 <>
                                     <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
                                     Enregistrement...
                                 </>
