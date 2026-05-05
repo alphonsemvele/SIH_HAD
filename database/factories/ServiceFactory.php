@@ -16,7 +16,7 @@ class ServiceFactory extends Factory
             'code' => fake()->regexify('[A-Za-z0-9]{20}'),
             'nom' => fake()->regexify('[A-Za-z0-9]{100}'),
             'description' => fake()->text(),
-            'chef_service_id' => User::factory(),
+            'chef_service_id' => null,
             'etage' => fake()->regexify('[A-Za-z0-9]{10}'),
             'batiment' => fake()->regexify('[A-Za-z0-9]{50}'),
             'telephone' => fake()->regexify('[A-Za-z0-9]{20}'),

@@ -13,6 +13,7 @@ use App\Http\Controllers\ExamenImagerieController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\QrCodeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +81,63 @@ Route::middleware('auth:sanctum')->group(function () {
     // Administration
     Route::apiResource('users', UserController::class);
     Route::apiResource('roles', RoleController::class);
+    
+    // Carte et Localisation
+    Route::get('/patients/map', [\App\Http\Controllers\MapController::class, 'patientsMap']);
+    Route::get('/patients/geolocalises', [\App\Http\Controllers\MapController::class, 'patientsGeolocalises']);
+    Route::get('/patients/{patient}/geolocalisation', [\App\Http\Controllers\MapController::class, 'patientGeolocalisation']);
+    Route::put('/patients/{patient}/geolocalisation', [\App\Http\Controllers\MapController::class, 'updatePatientGeolocalisation']);
+    Route::get('/zones-visites', [\App\Http\Controllers\MapController::class, 'zonesVisites']);
+    Route::post('/itineraire/optimiser', [\App\Http\Controllers\MapController::class, 'itineraireOptimise']);
+    Route::get('/zones/statistiques', [\App\Http\Controllers\MapController::class, 'statistiquesZones']);
+
+    // Rapports
+    Route::apiResource('rapports', \App\Http\Controllers\RapportController::class);
+    Route::get('/rapports/{rapport}/telecharger', [\App\Http\Controllers\RapportController::class, 'telecharger']);
+    Route::post('/rapports/generer', [\App\Http\Controllers\RapportController::class, 'generer']);
+    Route::get('/rapports/types', [\App\Http\Controllers\RapportController::class, 'getTypes']);
+    Route::get('/rapports/stats', [\App\Http\Controllers\RapportController::class, 'getStats']);
+    
+    // Messagerie
+    Route::get('/conversations', [\App\Http\Controllers\MessageController::class, 'conversations']);
+    Route::post('/conversations', [\App\Http\Controllers\MessageController::class, 'createConversation']);
+    Route::get('/conversations/{conversation}', [\App\Http\Controllers\MessageController::class, 'showConversation']);
+    Route::put('/conversations/{conversation}/mark-as-read', [\App\Http\Controllers\MessageController::class, 'markConversationAsRead']);
+    Route::delete('/conversations/{conversation}', [\App\Http\Controllers\MessageController::class, 'deleteConversation']);
+    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\MessageController::class, 'getMessages']);
+    Route::post('/messages', [\App\Http\Controllers\MessageController::class, 'sendMessage']);
+    Route::put('/messages/{message}/mark-as-read', [\App\Http\Controllers\MessageController::class, 'markAsRead']);
+    
+    // QR Codes HAD
+    Route::post('/had/visites/{visite}/qr-code', [QrCodeController::class, 'store']);
+    Route::get('/had/qr-codes/{uuid}/preview', [QrCodeController::class, 'preview']);
+    Route::post('/had/qr-codes/{uuid}/scan', [QrCodeController::class, 'scan']);
+    Route::post('/had/qr-codes/{uuid}/revoquer', [QrCodeController::class, 'revoquer']);
+    Route::post('/had/qr-codes/{uuid}/regenerer', [QrCodeController::class, 'regenerer']);
+    
+    // Réalisation de visite
+    Route::post('/had/visites/{visite}/realisation', [RealisationVisiteController::class, 'store']);
+    Route::get('/had/visites/{visite}/preuve', function (VisiteHad $visite) {
+        $preuve = \App\Models\PreuveVisite::where('visite_had_id', $visite->id)->first();
+        
+        if (!$preuve) {
+            return response()->json(['error' => 'Preuve non trouvée'], 404);
+        }
+        
+        // Générer une URL temporaire signée (valide 5 minutes)
+        $url = \Storage::temporaryUrl($preuve->pdf_chemin, now()->addMinutes(5));
+        
+        return response()->json(['preuve_url' => $url]);
+    });
+    Route::delete('/messages/{message}', [\App\Http\Controllers\MessageController::class, 'deleteMessage']);
+    Route::get('/users/available-for-chat', [\App\Http\Controllers\MessageController::class, 'getAvailableUsers']);
+    Route::get('/messaging/stats', [\App\Http\Controllers\MessageController::class, 'getStats']);
+    
+    // Planning
+    Route::apiResource('planning', \App\Http\Controllers\PlanningController::class);
+    
+    // Alertes
+    Route::apiResource('alertes', \App\Http\Controllers\AlerteController::class);
     
     // Anomalies
     Route::post('/anomalies', [\App\Http\Controllers\AnomalieController::class, 'store']);

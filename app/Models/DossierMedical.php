@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class DossierMedical extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $table = 'dossiers_medicaux';
 
@@ -199,5 +200,13 @@ class DossierMedical extends Model
                     ->orWhere('prenom', 'like', "%{$search}%")
                     ->orWhere('numero_dossier', 'like', "%{$search}%");
             });
+    }
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['antecedents_medicaux', 'antecedents_chirurgicaux', 'allergies_confirmees', 'groupe_sanguin', 'taille_cm', 'poids_kg', 'maladies_chroniques', 'traitements_en_cours', 'statut'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

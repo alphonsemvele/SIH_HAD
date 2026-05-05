@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Admission extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -93,5 +94,13 @@ class Admission extends Model
     public function acteMedicals(): HasMany
     {
         return $this->hasMany(ActeMedical::class);
+    }
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['date_admission', 'date_sortie', 'motif', 'diagnostic_entree', 'diagnostic_sortie', 'mode_sortie', 'statut'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

@@ -15,6 +15,7 @@ class TourneeFactory extends Factory
         return [
             'date' => fake()->date(),
             'soignant_id' => User::factory(),
+            'service_id' => \App\Models\Service::factory(),
             'vehicule' => fake()->regexify('[A-Za-z0-9]{50}'),
             'heure_debut_prevue' => fake()->time(),
             'heure_fin_prevue' => fake()->time(),

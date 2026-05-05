@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Facture extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -82,5 +83,13 @@ class Facture extends Model
     public function paiements(): HasMany
     {
         return $this->hasMany(Paiement::class);
+    }
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['date_facture', 'date_echeance', 'montant_brut', 'remise', 'montant_assurance', 'montant_patient', 'montant_total', 'montant_paye', 'tva', 'statut'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Requests\PatientStoreRequest;
 use App\Http\Requests\PatientUpdateRequest;
 use App\Models\Patient;
 use App\Models\DossierMedical;
+use App\Services\Patient\PatientCreationService;
+use App\Services\Patient\PatientSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,22 +15,22 @@ use Inertia\Response;
 
 class PatientController extends Controller
 {
+    public function __construct(
+        private PatientCreationService $patientCreationService,
+        private PatientSearchService $patientSearchService
+    ) {}
+
     public function index(Request $request)
     {
+        // Utiliser le service de recherche
+        $patients = $this->patientSearchService->search(
+            $request->search ?? '',
+            $request->get('per_page', 10)
+        );
+
+        // Appliquer les filtres supplémentaires
         $query = Patient::query();
-
-        // Recherche
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('nom', 'like', "%{$search}%")
-                  ->orWhere('prenom', 'like', "%{$search}%")
-                  ->orWhere('numero_dossier', 'like', "%{$search}%")
-                  ->orWhere('telephone', 'like', "%{$search}%");
-            });
-        }
-
-        // Filtre par statut
+        
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
@@ -45,8 +47,6 @@ class PatientController extends Controller
             'consultations' => Patient::where('statut', Patient::STATUT_CONSULTATION)->count(),
             'urgences' => Patient::where('statut', Patient::STATUT_URGENCE)->count(),
         ];
-
-        $patients = $query->latest()->paginate(10)->withQueryString();
 
         // Si la requête vient de l'API mobile → JSON
         if ($request->wantsJson() || $request->is('api/*')) {
@@ -68,17 +68,18 @@ class PatientController extends Controller
 
     public function store(PatientStoreRequest $request): JsonResponse
     {
+        $data = $request->validated();
+        
         // Générer un numéro de dossier unique
         $numeroDossier = 'PAT-' . date('Y') . '-' . str_pad(Patient::count() + 1, 5, '0', STR_PAD_LEFT);
-
-        $data = $request->validated();
         
         // Convertir les allergies en array si c'est une string
         if (isset($data['allergies']) && is_string($data['allergies'])) {
             $data['allergies'] = array_map('trim', explode(',', $data['allergies']));
         }
 
-        $patient = Patient::create([
+        // Utiliser le service de création
+        $patient = $this->patientCreationService->create([
             ...$data,
             'numero_dossier' => $numeroDossier,
             'statut' => $data['statut'] ?? Patient::STATUT_CONSULTATION,

@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Configuration pour les routes API (pas de CSRF, pas de sessions web)
         $middleware->group('api', [
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
+            \App\Http\Middleware\LogApiAccess::class,
         ]);
         
         // Exclure les routes API de la protection CSRF

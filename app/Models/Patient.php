@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Patient extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'numero_dossier',
@@ -42,6 +43,14 @@ class Patient extends Model
         'photo',
         'notes',
         'statut',
+        'ins_matricule',
+        'ins_oid',
+        'ins_qualifie',
+        'ins_qualifie_at',
+        'ins_qualifie_par_id',
+        'ins_traits_officiels',
+        'date_naissance_officielle',
+        'lieu_naissance_code_insee',
     ];
 
     protected function casts(): array
@@ -54,6 +63,10 @@ class Patient extends Model
             'antecedents_chirurgicaux' => 'array',
             'antecedents_familiaux' => 'array',
             'assurance_id' => 'integer',
+            'ins_qualifie' => 'boolean',
+            'ins_qualifie_at' => 'datetime',
+            'ins_traits_officiels' => 'array',
+            'date_naissance_officielle' => 'date',
         ];
     }
 
@@ -213,5 +226,13 @@ class Patient extends Model
     public function getNombreVisitesAttribute(): int
     {
         return $this->visites()->count();
+    }
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['nom', 'prenom', 'date_naissance', 'sexe', 'telephone', 'email', 'adresse', 'statut'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }
