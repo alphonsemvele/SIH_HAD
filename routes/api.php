@@ -163,7 +163,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Tableau de bord Ségur (admin/coordinateur_segur uniquement)
-    Route::middleware('permission:admin|coordinateur_segur')->group(function () {
+    Route::middleware('segur.access')->group(function () {
         Route::get('/admin/segur/indicateurs', [\App\Http\Controllers\SegurDashboardController::class, 'indicateurs']);
     });
 });

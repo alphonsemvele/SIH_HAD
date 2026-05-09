@@ -248,6 +248,6 @@ Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy'])->n
 
     // Tableau de bord Ségur
     Route::get('/admin/segur/indicateurs', [SegurDashboardController::class, 'index'])
-        ->middleware('permission:admin|coordinateur_segur')
+        ->middleware('segur.access')
         ->name('admin.segur.indicateurs');
 });

@@ -29,6 +29,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
+
+        // ← AJOUTE CE BLOC
+    $middleware->alias([
+        'segur.access' => \App\Http\Middleware\EnsureSegurAccess::class,
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

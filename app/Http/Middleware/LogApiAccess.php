@@ -15,7 +15,7 @@ class LogApiAccess
         $response = $next($request);
         
         // Loguer uniquement les appels API authentifiés
-        if (Auth::check() && $request->isApi()) {
+        if (Auth::check() && $request->is('api/*')) {
             app(AuditTrailService::class)->log(
                 'api_access',
                 null,
