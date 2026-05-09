@@ -10,6 +10,8 @@ class PreuveVisite extends Model
 {
     use HasFactory;
 
+    protected $table = 'preuves_visite';
+
     protected $fillable = [
         'visite_had_id',
         'qr_scan_id',
@@ -22,6 +24,8 @@ class PreuveVisite extends Model
 
     protected $casts = [
         'contenu_synthese' => 'array',
+        'pdf_taille_octets' => 'integer',
+        'genere_a' => 'datetime',
     ];
 
     public function visiteHad(): BelongsTo

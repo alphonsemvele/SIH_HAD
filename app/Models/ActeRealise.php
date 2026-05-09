@@ -10,6 +10,8 @@ class ActeRealise extends Model
 {
     use HasFactory;
 
+    protected $table = 'actes_realises';
+
     protected $fillable = [
         'visite_had_id',
         'acte_medical_id',
@@ -18,20 +20,17 @@ class ActeRealise extends Model
         'observations',
         'non_prevu',
         'intervenant_id',
+        'realise_a',
     ];
 
     protected $casts = [
         'non_prevu' => 'boolean',
+        'realise_a' => 'datetime',
     ];
 
     public function visiteHad(): BelongsTo
     {
         return $this->belongsTo(VisiteHad::class);
-    }
-
-    public function acteMedical(): BelongsTo
-    {
-        return $this->belongsTo(ActeMedical::class);
     }
 
     public function intervenant(): BelongsTo

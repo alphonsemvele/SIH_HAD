@@ -14,6 +14,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\RealisationVisiteController;
 
 /*
 |--------------------------------------------------------------------------

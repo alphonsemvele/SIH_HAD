@@ -22,7 +22,7 @@ class QrCodeService
     public function generer(VisiteHad $visite): QrCode
     {
         return DB::transaction(function () use ($visite) {
-            $uuid = Str::uuid7();
+            $uuid = (string) Str::uuid7();
             
             $payload = [
                 'uuid' => $uuid,
@@ -38,8 +38,8 @@ class QrCodeService
                 'uuid' => $uuid,
                 'visite_had_id' => $visite->id,
                 'patient_had_id' => $visite->patient_id,
-                'creneau_debut' => $visite->heure_prevue,
-                'creneau_fin' => $visite->heure_prevue->copy()->addMinutes($visite->duree_prevue ?? 60),
+                'creneau_debut' => $visite->heure_prevue ?? now(),
+                'creneau_fin' => ($visite->heure_prevue ?? now())->copy()->addMinutes($visite->duree_prevue ?? 60),
                 'statut' => 'actif',
                 'payload_signe' => $signature,
                 'genere_par_id' => Auth::id() ?: 1, // Utiliser l'utilisateur 1 par défaut pour les tests

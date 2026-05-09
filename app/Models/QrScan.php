@@ -25,8 +25,9 @@ class QrScan extends Model
 
     protected $casts = [
         'scanned_at' => 'datetime',
-        'lat' => 'decimal:7,4',
-        'lng' => 'decimal:7,4',
+        'lat' => 'decimal:7',
+        'lng' => 'decimal:7',
+        'precision_m' => 'integer',
         'device_info' => 'array',
     ];
 

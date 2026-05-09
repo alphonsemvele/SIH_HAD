@@ -10,6 +10,8 @@ class PhotoVisite extends Model
 {
     use HasFactory;
 
+    protected $table = 'photos_visite';
+
     protected $fillable = [
         'visite_had_id',
         'chemin',
@@ -23,6 +25,7 @@ class PhotoVisite extends Model
 
     protected $casts = [
         'exif' => 'array',
+        'taille_octets' => 'integer',
     ];
 
     public function visiteHad(): BelongsTo

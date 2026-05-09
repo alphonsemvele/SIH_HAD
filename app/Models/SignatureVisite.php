@@ -10,6 +10,8 @@ class SignatureVisite extends Model
 {
     use HasFactory;
 
+    protected $table = 'signatures_visite';
+
     protected $fillable = [
         'visite_had_id',
         'signataire_type',
@@ -27,10 +29,5 @@ class SignatureVisite extends Model
     public function visiteHad(): BelongsTo
     {
         return $this->belongsTo(VisiteHad::class);
-    }
-
-    public function aidant(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'aidant_id');
     }
 }
