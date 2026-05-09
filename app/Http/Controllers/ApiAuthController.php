@@ -76,15 +76,61 @@ class ApiAuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $serviceName = null;
+        if ($user->service_id) {
+            $serviceName = \DB::table('services')->where('id', $user->service_id)->value('nom');
+        }
         return response()->json([
             'success' => true,
             'data' => [
                 'user' => [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'role' => $request->user()->role ?? 'infirmiere',
+                    'id'            => $user->id,
+                    'name'          => $user->name,
+                    'email'         => $user->email,
+                    'telephone'     => $user->telephone,
+                    'matricule'     => $user->matricule,
+                    'fonction'      => $user->fonction ?? 'Infirmier(ère) HAD',
+                    'specialite'    => $user->specialite,
+                    'service'       => $serviceName ?? 'Hospitalisation à Domicile',
+                    'date_embauche' => $user->date_embauche,
+                    'avatar'        => $user->avatar,
+                    'role'          => $user->role ?? 'infirmiere',
                 ],
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/me/stats — stats personnelles de l'utilisateur connecté
+     */
+    public function meStats(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+
+        $visitesTotal = \App\Models\VisiteHad::whereHas('tournee', fn($q) => $q->where('soignant_id', $userId))
+            ->whereNotNull('visite_at')
+            ->count();
+
+        $patientsUniques = \App\Models\VisiteHad::whereHas('tournee', fn($q) => $q->where('soignant_id', $userId))
+            ->whereNotNull('visite_at')
+            ->distinct('patient_id')
+            ->count('patient_id');
+
+        $tourneesTerminees = \App\Models\Tournee::where('soignant_id', $userId)
+            ->where('statut', 'terminee')
+            ->count();
+
+        $actesRealises = \App\Models\ActeRealise::where('intervenant_id', $userId)->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'visites_total'      => $visitesTotal,
+                'patients_uniques'   => $patientsUniques,
+                'tournees_terminees' => $tourneesTerminees,
+                'actes_realises'     => $actesRealises,
+                'note_moyenne'       => 4.9, // Placeholder (pas de système de notation pour l'instant)
             ],
         ]);
     }

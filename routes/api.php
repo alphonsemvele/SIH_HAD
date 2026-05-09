@@ -37,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [ApiAuthController::class, 'logout']);
     Route::get('/me', [ApiAuthController::class, 'me']);
+    Route::get('/me/stats', [ApiAuthController::class, 'meStats']);
     Route::post('/refresh', [ApiAuthController::class, 'refresh']);
     
     // Patients
