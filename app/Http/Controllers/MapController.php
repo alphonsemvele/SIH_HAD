@@ -40,7 +40,7 @@ class MapController extends Controller
             });
         }
 
-        $patients = $query->with(['derniereVisite', 'prochaineVisite'])
+        $patients = $query
             ->orderBy('priorite', 'desc')
             ->get();
 
@@ -56,10 +56,10 @@ class MapController extends Controller
                 'latitude' => $patient->latitude,
                 'longitude' => $patient->longitude,
                 'distance' => $this->calculerDistance($patient->latitude, $patient->longitude),
-                'a_visiter_aujourdhui' => $patient->prochaineVisite && $patient->prochaineVisite->date_visite->isToday(),
-                'derniere_visite' => $patient->derniereVisite ? $patient->derniereVisite->date_visite->format('d/m/Y') : null,
-                'prochaine_visite' => $patient->prochaineVisite ? $patient->prochaineVisite->date_visite->format('d/m/Y') : null,
-                'statut_visite' => $patient->prochaineVisite ? $patient->prochaineVisite->statut : null,
+                'a_visiter_aujourdhui' => false,
+                'derniere_visite' => null,
+                'prochaine_visite' => null,
+                'statut_visite' => null,
             ];
         });
 
@@ -78,7 +78,6 @@ class MapController extends Controller
     {
         $patients = Patient::whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->with(['derniereVisite', 'prochaineVisite'])
             ->get();
 
         $patientsGeo = $patients->map(function ($patient) {

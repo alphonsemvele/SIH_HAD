@@ -41,6 +41,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Patients
     Route::get('/patients/search', [PatientController::class, 'search']);
+    // Carte et Localisation (DOIVENT être AVANT apiResource('patients') sinon /patients/{patient} les capture)
+    Route::get('/patients/map', [\App\Http\Controllers\MapController::class, 'patientsMap']);
+    Route::get('/patients/geolocalises', [\App\Http\Controllers\MapController::class, 'patientsGeolocalises']);
+
     Route::apiResource('patients', PatientController::class);
     Route::get('/patients/{patient}/dossier-medical', [PatientController::class, 'dossierMedical']);
     Route::post('/patients/{patient}/constantes', [PatientController::class, 'ajouterConstantes']);
@@ -86,8 +90,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('roles', RoleController::class);
     
     // Carte et Localisation
-    Route::get('/patients/map', [\App\Http\Controllers\MapController::class, 'patientsMap']);
-    Route::get('/patients/geolocalises', [\App\Http\Controllers\MapController::class, 'patientsGeolocalises']);
     Route::get('/patients/{patient}/geolocalisation', [\App\Http\Controllers\MapController::class, 'patientGeolocalisation']);
     Route::put('/patients/{patient}/geolocalisation', [\App\Http\Controllers\MapController::class, 'updatePatientGeolocalisation']);
     Route::get('/zones-visites', [\App\Http\Controllers\MapController::class, 'zonesVisites']);
