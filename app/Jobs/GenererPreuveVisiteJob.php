@@ -3,13 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\VisiteHad;
-use App\Models\ActeRealise;
-use App\Models\ConstanteVitale;
-use App\Models\PhotoVisite;
-use App\Models\SignatureVisite;
 use App\Models\PreuveVisite;
 use App\Models\QrScan;
-use App\Models\Patient;
 use App\Services\Audit\AuditTrailService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -17,8 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Barryvdh\DomPDF\DomPDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class GenererPreuveVisiteJob implements ShouldQueue
 {
@@ -29,70 +23,62 @@ class GenererPreuveVisiteJob implements ShouldQueue
 
     public function __construct(
         public VisiteHad $visite
-    ) {
-        $this->visite = $visite;
-    }
+    ) {}
 
     public function handle(AuditTrailService $auditService): void
     {
-        // Charger toutes les données nécessaires
-        $visite = $this->visite->fresh([
+        // Recharger la visite avec les relations
+        $visite = VisiteHad::with([
+            'patient',
             'actesRealises',
             'photosVisite',
             'signatureVisite',
             'qrScans' => fn($q) => $q->orderBy('scanned_at', 'desc'),
-            'patient'
-        ]);
+        ])->findOrFail($this->visite->id);
 
-        // Récupérer le scan QR le plus récent
-        $qrScan = QrScan::where('visite_had_id', $visite->id)
-            ->orderBy('scanned_at', 'desc')
-            ->first();
+        $qrScan = $visite->qrScans->first();
 
-        // Préparer les données pour le PDF
         $data = [
-            'visite' => $visite,
-            'qrScan' => $qrScan,
-            'patient' => $visite->patient,
-            'actes' => $visite->actesRealises,
-            'photos' => $visite->photosVisite,
-            'signature' => $visite->signatureVisite,
-            'constantes' => ConstanteVitale::where('patient_id', $visite->patient_id)
-                ->whereDate('date_releve', now()->toDateString())
-                ->get(),
+            'visite'     => $visite,
+            'qrScan'     => $qrScan,
+            'patient'    => $visite->patient,
+            'actes'      => $visite->actesRealises,
+            'photos'     => $visite->photosVisite,
+            'signature'  => $visite->signatureVisite,
+            'constantes' => collect(), // Collection vide - le template skippera la section
         ];
 
-        // Générer le PDF
-        $pdf = new DomPDF();
-        $pdf->loadHTML(view('pdf.preuve_visite', $data)->render());
+        // Générer le PDF avec la facade Pdf (barryvdh/laravel-dompdf)
+        $pdf = Pdf::loadView('pdf.preuve_visite', $data);
         $pdfContent = $pdf->output();
 
-        // Sauvegarder le PDF
+        // Sauvegarder
         $filename = "preuve_{$visite->id}_" . now()->format('Y-m-d_His') . ".pdf";
-        $path = "visites/{$visite->id}/{$filename}";
+        $path     = "visites/{$visite->id}/{$filename}";
         Storage::disk('local')->put($path, $pdfContent);
 
-        // Calculer le hash
+        // Hash
         $hash = hash('sha256', $pdfContent);
 
-        // Créer ou mettre à jour la PreuveVisite
+        // Créer/MAJ PreuveVisite
         PreuveVisite::updateOrCreate(
             ['visite_had_id' => $visite->id],
             [
-                'pdf_chemin' => $path,
-                'pdf_hash_sha256' => $hash,
+                'qr_scan_id'        => $qrScan?->id,
+                'pdf_chemin'        => $path,
+                'pdf_hash_sha256'   => $hash,
                 'pdf_taille_octets' => strlen($pdfContent),
-                'contenu_synthese' => [
-                    'actes_count' => $visite->actesRealises->count(),
-                    'photos_count' => $visite->photosVisite->count(),
-                    'signature_presente' => !is_null($visite->signatureVisite),
-                    'qr_scan_id' => $qrScan?->id,
+                'contenu_synthese'  => [
+                    'actes_count'        => $visite->actesRealises->count(),
+                    'photos_count'       => $visite->photosVisite->count(),
+                    'signature_presente' => $visite->signatureVisite !== null,
+                    'qr_scan_id'         => $qrScan?->id,
                 ],
                 'genere_a' => now(),
             ]
         );
 
-        // Log d'audit
+        // Audit
         $auditService->log(
             'preuve_visite_generee',
             $visite,

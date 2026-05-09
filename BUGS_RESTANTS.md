@@ -31,3 +31,21 @@ Le user admin a été créé via `DB::table()` direct pour contourner.
 À aligner proprement : soit migration ALTER pour ajouter `nom`/`prenom` et virer `name`,
 soit ajouter `name` dans `$fillable` du User. Voir avec l'équipe la convention voulue.
 
+
+## GenererPreuveVisiteJob - PDF preuve à finir dimanche matin
+
+État: Job tourne (81ms), template chargé, mais variables manquantes:
+- ligne 76: $constantes->count() (fix appliqué dans Job: collect() vide)
+- ligne 130: $hash undefined (à passer depuis Job ou retirer du template)
+- probablement d'autres variables manquantes (qrScan->scanned_at, etc.)
+
+Plan dimanche matin (15-30 min):
+1. Lister TOUTES les variables référencées dans template via grep
+2. S'assurer que le Job les passe toutes (avec fallbacks null-safe)
+3. Re-test
+4. Si template trop foiré: réécrire template minimaliste 1 page
+
+Pour la démo cette stratégie alternative est OK car:
+- Smoke test E2E backend validé (acte créé, visite mise à jour)
+- Le PDF preuve peut être généré côté UI plus tard
+- Le workflow critique (QR scan + saisie mobile) ne dépend pas du PDF

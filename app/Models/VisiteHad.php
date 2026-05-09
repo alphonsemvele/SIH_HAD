@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class VisiteHad extends Model
 {
@@ -60,25 +62,40 @@ class VisiteHad extends Model
         return $this->belongsTo(Patient::class);
     }
 
+    public function actesRealises(): HasMany
+    {
+        return $this->hasMany(ActeRealise::class, 'visite_had_id');
+    }
+
+    public function photosVisite(): HasMany
+    {
+        return $this->hasMany(PhotoVisite::class, 'visite_had_id');
+    }
+
+    public function signatureVisite(): HasOne
+    {
+        return $this->hasOne(SignatureVisite::class, 'visite_had_id');
+    }
+
+    public function qrScans(): HasMany
+    {
+        return $this->hasMany(QrScan::class, 'visite_had_id');
+    }
+
+    public function qrCodes(): HasMany
+    {
+        return $this->hasMany(QrCode::class, 'visite_had_id');
+    }
+
+    public function preuveVisite(): HasOne
+    {
+        return $this->hasOne(PreuveVisite::class, 'visite_had_id');
+    }
+
     // ── Accesseurs ────────────────────────────────────────────────────────
 
     public function getEstVisiteAttribute(): bool
     {
         return $this->visite_at !== null;
-    }
-
-    // ── Méthodes ──────────────────────────────────────────────────────────
-
-    public function valider(array $data): void
-    {
-        $this->update([
-            'visite_at'      => now(),
-            'observations'   => $data['observations']   ?? $this->observations,
-            'temperature'    => $data['temperature']    ?? $this->temperature,
-            'tension'        => $data['tension']        ?? $this->tension,
-            'pouls'          => $data['pouls']          ?? $this->pouls,
-            'saturation'     => $data['saturation']     ?? $this->saturation,
-            'notes_soignant' => $data['notes_soignant'] ?? $this->notes_soignant,
-        ]);
     }
 }
