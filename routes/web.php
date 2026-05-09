@@ -20,6 +20,7 @@ use App\Http\Controllers\TourneeController;
 use App\Http\Controllers\AnomalieController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminRoleController;
+use App\Http\Controllers\SegurDashboardController;
 
 Route::middleware(['auth', 'verified'])
     ->prefix('anomalies')
@@ -244,4 +245,9 @@ Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy'])->n
     Route::get('/admin/agenda', function () {
         return Inertia::render('admin/agenda');
     })->name('admin.agenda');
+
+    // Tableau de bord Ségur
+    Route::get('/admin/segur/indicateurs', [SegurDashboardController::class, 'index'])
+        ->middleware('permission:admin|coordinateur_segur')
+        ->name('admin.segur.indicateurs');
 });

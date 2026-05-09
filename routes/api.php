@@ -147,4 +147,23 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard/stats', [\App\Http\Controllers\DashboardController::class, 'stats']);
     Route::get('/dashboard/tournees-actives', [\App\Http\Controllers\DashboardController::class, 'tourneesActives']);
+    
+    // Plans de soins HAD
+    Route::prefix('/had')->group(function () {
+        Route::post('/patients/{patientHad}/plans-soins', [\App\Http\Controllers\PlanSoinsController::class, 'creer']);
+        Route::get('/plans-soins/{plan}', [\App\Http\Controllers\PlanSoinsController::class, 'afficher']);
+        Route::post('/plans-soins/{plan}/activer', [\App\Http\Controllers\PlanSoinsController::class, 'activer']);
+        Route::post('/plans-soins/{plan}/reevaluer', [\App\Http\Controllers\PlanSoinsController::class, 'reevaluer']);
+        Route::get('/patients/{patientHad}/plans-soins/actuel', [\App\Http\Controllers\PlanSoinsController::class, 'planActuel']);
+        
+        // Clôture HAD
+        Route::post('/patients/{patientHad}/cloturer', [\App\Http\Controllers\ClotureHadController::class, 'cloturer']);
+        Route::post('/cr-fin-had/{cr}/valider', [\App\Http\Controllers\ClotureHadController::class, 'valider']);
+        Route::get('/cr-fin-had/{cr}/pdf', [\App\Http\Controllers\ClotureHadController::class, 'pdf']);
+    });
+
+    // Tableau de bord Ségur (admin/coordinateur_segur uniquement)
+    Route::middleware('permission:admin|coordinateur_segur')->group(function () {
+        Route::get('/admin/segur/indicateurs', [\App\Http\Controllers\SegurDashboardController::class, 'indicateurs']);
+    });
 });

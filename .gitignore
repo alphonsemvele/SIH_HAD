@@ -12,7 +12,9 @@
 /vendor
 .env
 .env.backup
+.env.backup_sqlite
 .env.production
+database.sqlite.backup
 .phpactor.json
 .phpunit.result.cache
 Homestead.json

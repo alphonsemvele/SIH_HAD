@@ -23,6 +23,9 @@ class LigneDelivrance extends Model
         'prix_total',
         'lot',
         'date_expiration',
+        'numero_lot',
+        'date_peremption',
+        'code_cip13',
     ];
 
     /**
@@ -39,6 +42,7 @@ class LigneDelivrance extends Model
             'prix_unitaire' => 'decimal:2',
             'prix_total' => 'decimal:2',
             'date_expiration' => 'date',
+            'date_peremption' => 'date',
         ];
     }
 

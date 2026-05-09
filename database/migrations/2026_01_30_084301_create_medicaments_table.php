@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('dci', 200)->nullable();
             $table->enum('forme', ["comprime","gelule","sirop","injectable","pommade","collyre","suppositoire","solution","poudre","autre"]);
             $table->string('dosage', 50)->nullable();
-            $table->enum('categorie', ["antalgique","antibiotique","anti_inflammatoire","antidiabetique","antihypertenseur","antipaludeen","antiseptique","vitamine","autre"]);
+            $table->enum('categorie', ["antalgique","antibiotique","anti_inflammatoire","antidiabetique","antihypertenseur","antipaludeen","antiseptique","vitamine","autre"])->nullable();
             $table->enum('voie_administration', ["orale","injectable","cutanee","rectale","oculaire","nasale","auriculaire","autre"])->default('orale');
             $table->string('conditionnement', 100)->nullable();
             $table->unsignedInteger('stock_actuel')->default(0);
