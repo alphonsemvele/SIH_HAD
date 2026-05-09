@@ -15,7 +15,6 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\RealisationVisiteController;
-use App\Models\VisiteHad;
 
 /*
 |--------------------------------------------------------------------------
@@ -119,25 +118,17 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Réalisation de visite
     Route::post('/had/visites/{visite}/realisation', [RealisationVisiteController::class, 'store']);
-    Route::get('/had/visites/{visite}/preuve', function (int $visite) {
-        $visiteHad = VisiteHad::findOrFail($visite);
-        $preuve = \App\Models\PreuveVisite::where('visite_had_id', $visiteHad->id)
-            ->latest()
-            ->first();
+    Route::get('/had/visites/{visite}/preuve', function (VisiteHad $visite) {
+        $preuve = \App\Models\PreuveVisite::where('visite_had_id', $visite->id)->first();
         
         if (!$preuve) {
-            return response()->json(['error' => 'Preuve non trouvee'], 404);
+            return response()->json(['error' => 'Preuve non trouvée'], 404);
         }
-
-        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($preuve->pdf_chemin);
-        if (!file_exists($fullPath)) {
-            return response()->json(['error' => 'Fichier PDF manquant'], 404);
-        }
-
-        return response()->file($fullPath, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="preuve_visite_' . $visiteHad->id . '.pdf"',
-        ]);
+        
+        // Générer une URL temporaire signée (valide 5 minutes)
+        $url = \Storage::temporaryUrl($preuve->pdf_chemin, now()->addMinutes(5));
+        
+        return response()->json(['preuve_url' => $url]);
     });
     Route::delete('/messages/{message}', [\App\Http\Controllers\MessageController::class, 'deleteMessage']);
     Route::get('/users/available-for-chat', [\App\Http\Controllers\MessageController::class, 'getAvailableUsers']);

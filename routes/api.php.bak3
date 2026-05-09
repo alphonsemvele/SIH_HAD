@@ -119,14 +119,13 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Réalisation de visite
     Route::post('/had/visites/{visite}/realisation', [RealisationVisiteController::class, 'store']);
-    Route::get('/had/visites/{visite}/preuve', function (int $visite) {
-        $visiteHad = VisiteHad::findOrFail($visite);
-        $preuve = \App\Models\PreuveVisite::where('visite_had_id', $visiteHad->id)
+    Route::get('/had/visites/{visite}/preuve', function (VisiteHad $visite) {
+        $preuve = \App\Models\PreuveVisite::where('visite_had_id', $visite->id)
             ->latest()
             ->first();
         
         if (!$preuve) {
-            return response()->json(['error' => 'Preuve non trouvee'], 404);
+            return response()->json(['error' => 'Preuve non trouvée'], 404);
         }
 
         $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($preuve->pdf_chemin);
@@ -136,7 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         return response()->file($fullPath, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="preuve_visite_' . $visiteHad->id . '.pdf"',
+            'Content-Disposition' => 'inline; filename="preuve_visite_' . $visite->id . '.pdf"',
         ]);
     });
     Route::delete('/messages/{message}', [\App\Http\Controllers\MessageController::class, 'deleteMessage']);
