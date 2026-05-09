@@ -49,3 +49,17 @@ Pour la démo cette stratégie alternative est OK car:
 - Smoke test E2E backend validé (acte créé, visite mise à jour)
 - Le PDF preuve peut être généré côté UI plus tard
 - Le workflow critique (QR scan + saisie mobile) ne dépend pas du PDF
+
+## Migrations skippées (à reprendre semaine prochaine)
+
+3 migrations en .skip parce qu'elles référencent `actes_medicaux` qui n'existe pas :
+- 2026_05_07_202037_create_plan_soins_prestations_table.php.skip
+- 2026_05_07_202308_add_plan_soins_to_visite_hads.php.skip
+- 2026_05_07_203806_create_cr_fin_had.php.skip
+
+À faire :
+1. Créer une migration `create_actes_medicaux` avec les colonnes attendues (id, code_ccam, libelle, durée_standard, ...)
+2. Renommer les .skip en .php
+3. php artisan migrate
+
+Pour la démo dimanche, le contenu des plans de soins est mocké dans les actes_realises.

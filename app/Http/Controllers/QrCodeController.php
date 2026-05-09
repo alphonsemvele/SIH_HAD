@@ -8,6 +8,8 @@ use App\Services\Had\QrCodeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class QrCodeController extends Controller
 {
@@ -35,8 +37,6 @@ class QrCodeController extends Controller
         $qrCode = QrCode::where('uuid', $uuid)->firstOrFail();
         $url = config('services.qr.base_url', 'http://localhost:8000') . '/qr/' . $qrCode->uuid;
 
-        // Endroid v6 - API Builder
-        // Endroid v6 - constructor params direct
         $endroidQr = new \Endroid\QrCode\QrCode(
             data: $url,
             size: 300,
@@ -65,7 +65,28 @@ class QrCodeController extends Controller
             $request->input('device_info')
         );
 
-        return response()->json($result, $result['success'] ? 200 : 422);
+        // Si scan accepté, enrichir la réponse pour le mobile
+        if (($result['success'] ?? false) === true) {
+            $visite = VisiteHad::with([
+                'patient:id,nom,prenom,date_naissance,sexe,telephone,adresse,ville',
+                'tournee:id,soignant_id,date,heure_debut_prevue',
+                'tournee.soignant:id,name',
+            ])->find($qrCode->visite_had_id);
+
+            // Plan de soins / actes prévus (si table dispo, sinon collection vide)
+            $actesPrevus = collect();
+            if (Schema::hasTable('plans_soins_prestations')) {
+                $actesPrevus = DB::table('plans_soins_prestations')
+                    ->where('patient_had_id', $qrCode->patient_had_id)
+                    ->select('id', 'libelle', 'code_ccam', 'frequence', 'duree_minutes')
+                    ->get();
+            }
+
+            $result['visite'] = $visite;
+            $result['actes_prevus'] = $actesPrevus;
+        }
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
     }
 
     public function revoquer(string $uuid, Request $request): JsonResponse

@@ -33,16 +33,21 @@ class QrCodeController extends Controller
     public function preview(string $uuid): Response
     {
         $qrCode = QrCode::where('uuid', $uuid)->firstOrFail();
+        $url = config('services.qr.base_url', 'http://localhost:8000') . '/qr/' . $qrCode->uuid;
 
-        $result = \Endroid\QrCode\Builder\Builder::create()
-            ->writer(new \Endroid\QrCode\Writer\PngWriter())
-            ->data(config('services.qr.base_url') . '/qr/' . $qrCode->uuid)
-            ->size(300)
-            ->margin(10)
-            ->build();
+        // Endroid v6 - API Builder
+        // Endroid v6 - constructor params direct
+        $endroidQr = new \Endroid\QrCode\QrCode(
+            data: $url,
+            size: 300,
+            margin: 10
+        );
+
+        $writer = new \Endroid\QrCode\Writer\PngWriter();
+        $result = $writer->write($endroidQr);
 
         return response($result->getString())
-            ->header('Content-Type', 'image/png')
+            ->header('Content-Type', $result->getMimeType())
             ->header('Cache-Control', 'public, max-age=3600');
     }
 
