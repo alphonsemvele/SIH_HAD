@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     // Administration
+    Route::get('/users/available-for-chat', [\App\Http\Controllers\MessageController::class, 'getAvailableUsers']);
     Route::apiResource('users', UserController::class);
     Route::apiResource('roles', RoleController::class);
     
@@ -140,7 +141,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
     Route::delete('/messages/{message}', [\App\Http\Controllers\MessageController::class, 'deleteMessage']);
-    Route::get('/users/available-for-chat', [\App\Http\Controllers\MessageController::class, 'getAvailableUsers']);
     Route::get('/messaging/stats', [\App\Http\Controllers\MessageController::class, 'getStats']);
     
     // Planning

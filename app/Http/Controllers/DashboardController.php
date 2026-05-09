@@ -58,4 +58,45 @@ class DashboardController extends Controller
             'dernieres_admissions' => $dernieres_admissions,
         ]);
     }
+
+    /**
+     * GET /api/dashboard/stats
+     * Statistiques globales pour le mobile.
+     */
+    public function stats()
+    {
+        return response()->json([
+            'patients_actifs'    => \App\Models\Patient::whereNotIn('statut', ['decede'])->count(),
+            'lits_occupes'       => \App\Models\Lit::where('statut', 'occupe')->count(),
+            'lits_total'         => \App\Models\Lit::count(),
+            'tournees_had'       => \App\Models\Tournee::whereDate('date', today())->count(),
+            'tournees_terminees' => \App\Models\Tournee::whereDate('date', today())->where('statut', 'terminee')->count(),
+            'visites_realisees'  => \App\Models\VisiteHad::whereNotNull('visite_at')->count(),
+            'preuves_generees'   => \App\Models\PreuveVisite::count(),
+        ]);
+    }
+
+    /**
+     * GET /api/dashboard/tournees-actives
+     * Tournées en cours pour le mobile.
+     */
+    public function tourneesActives()
+    {
+        $tournees = \App\Models\Tournee::with(['soignant:id,name', 'service:id,nom'])
+            ->where('statut', 'en_cours')
+            ->orWhereDate('date', today())
+            ->orderBy('heure_debut_prevue')
+            ->get()
+            ->map(fn ($t) => [
+                'id' => $t->id,
+                'date' => $t->date?->format('d/m/Y'),
+                'heure_debut_prevue' => $t->heure_debut_prevue,
+                'statut' => $t->statut,
+                'soignant' => $t->soignant?->name,
+                'service' => $t->service?->nom,
+            ]);
+
+        return response()->json(['tournees' => $tournees]);
+    }
+
 }

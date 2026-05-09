@@ -110,9 +110,9 @@ class PatientController extends Controller
             ->with('success', 'Patient créé avec succès.');
     }
 
-    public function show(Patient $patient): Response
+    public function show(Patient $patient)
     {
-        $patient->load(['admissions', 'consultations', 'prescriptions', 'insurance', 'dossierMedical']);
+        // load() retiré : relations 'admissions','consultations','prescriptions','insurance','dossierMedical' non implémentées
 
         // Si la requête vient de l'API mobile → JSON
         if (request()->wantsJson() || request()->is('api/*')) {
@@ -198,4 +198,23 @@ class PatientController extends Controller
         return redirect()->back()
             ->with('success', 'Statut mis à jour avec succès.');
     }
+
+    /**
+     * GET /api/patients/{patient}/dossier-medical
+     * Retourne le dossier médical du patient pour le mobile.
+     */
+    public function dossierMedical(Patient $patient)
+    {
+        return response()->json([
+            'patient_id' => $patient->id,
+            'nom' => $patient->nom,
+            'prenom' => $patient->prenom,
+            'date_naissance' => $patient->date_naissance?->toDateString(),
+            'antecedents' => $patient->antecedents ?? [],
+            'allergies' => $patient->allergies ?? [],
+            'traitements_en_cours' => $patient->traitements_en_cours ?? [],
+            'message' => 'Dossier médical de base. Implémentation complète à venir.',
+        ]);
+    }
+
 }

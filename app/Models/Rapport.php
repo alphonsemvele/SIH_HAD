@@ -262,14 +262,14 @@ class Rapport extends Model
     }
 
     // Obtenir le temps relatif
-    public function getTimeAgoAttribute(): string
+    public function getTimeAgoAttribute(): ?string
     {
-        return $this->created_at->diffForHumans();
+        return $this->created_at?->diffForHumans();
     }
 
     // Obtenir la date formatée
-    public function getDateFormateeAttribute(): string
+    public function getDateFormateeAttribute(): ?string
     {
-        return $this->date_rapport->format('d/m/Y');
+        return $this->date_rapport?->format('d/m/Y');
     }
 }
