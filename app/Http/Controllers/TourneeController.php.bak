@@ -21,7 +21,7 @@ class TourneeController extends Controller
         $tournees = Tournee::with([
             'soignant:id,name',
             'service:id,nom,etage',
-            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,date_naissance')
+            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,age')
                                          ->orderBy('ordre'),
         ])
             ->when($request->service_id,  fn ($q) => $q->where('service_id',  $request->service_id))
@@ -112,7 +112,7 @@ class TourneeController extends Controller
         $tournee->load([
             'soignant:id,name',
             'service:id,nom,etage',
-            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,date_naissance')
+            'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,age')
                                          ->orderBy('ordre'),
         ]);
 
@@ -307,7 +307,7 @@ class TourneeController extends Controller
     {
         $occupations = $tournee->service
             ->occupationsActives()
-            ->with('patient:id,nom,prenom,sexe,date_naissance', 'lit:id,numero,chambre')
+            ->with('patient:id,nom,prenom,sexe,age', 'lit:id,numero,chambre')
             ->orderBy('chambre')
             ->orderBy('lit_id')
             ->get();

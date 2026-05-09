@@ -235,4 +235,14 @@ class Patient extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
+
+    /**
+     * Accesseur : âge calculé depuis date_naissance.
+     */
+    public function getAgeAttribute(): ?int
+    {
+        return $this->date_naissance
+            ? \Carbon\Carbon::parse($this->date_naissance)->age
+            : null;
+    }
 }
