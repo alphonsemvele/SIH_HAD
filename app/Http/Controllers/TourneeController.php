@@ -107,7 +107,7 @@ class TourneeController extends Controller
 
     // ── Show ──────────────────────────────────────────────────────────────
 
-    public function show(Tournee $tournee): Response
+    public function show(Request $request, Tournee $tournee)
     {
         $tournee->load([
             'soignant:id,name',
@@ -115,6 +115,10 @@ class TourneeController extends Controller
             'visiteHads' => fn ($q) => $q->with('patient:id,nom,prenom,sexe,date_naissance')
                                          ->orderBy('ordre'),
         ]);
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json(['tournee' => $this->formatTournee($tournee)]);
+        }
 
         return Inertia::render('Tournees/Show', [
             'tournee' => $this->formatTournee($tournee),
@@ -244,6 +248,53 @@ class TourneeController extends Controller
         return redirect()->back()->with('success', 'Visite de ' . $visite->patient->nom_complet . ' validée.');
     }
 
+    /**
+     * GET /api/tournees/{tournee}/visites
+     * Liste des visites d'une tournée pour le mobile.
+     */
+    public function visites(int $tournee)
+    {
+        $t = Tournee::with([
+            'visiteHads.patient',
+            'visiteHads.actesRealises',
+        ])->findOrFail($tournee);
+
+        return response()->json([
+            'tournee_id' => $t->id,
+            'visites' => $t->visiteHads->map(function (VisiteHad $v) {
+                return [
+                    'id'                    => $v->id,
+                    'ordre'                 => $v->ordre,
+                    'priorite'              => $v->priorite,
+                    'chambre'               => $v->chambre,
+                    'lit'                   => $v->lit,
+                    'heure_prevue'          => $v->heure_prevue?->toIso8601String(),
+                    'visite_at'             => $v->visite_at?->toIso8601String(),
+                    'duree_prevue'          => $v->duree_prevue,
+                    'diagnostic'            => $v->diagnostic,
+                    'jours_hospitalisation' => $v->jours_hospitalisation,
+                    'observations'          => $v->observations,
+                    'temperature'           => $v->temperature,
+                    'tension'               => $v->tension,
+                    'pouls'                 => $v->pouls,
+                    'saturation'            => $v->saturation,
+                    'statut'                => $v->visite_at ? 'realisee' : 'planifiee',
+                    'patient'               => $v->patient ? [
+                        'id'             => $v->patient->id,
+                        'nom'            => $v->patient->nom,
+                        'prenom'         => $v->patient->prenom,
+                        'sexe'           => $v->patient->sexe,
+                        'date_naissance' => $v->patient->date_naissance?->toDateString(),
+                        'adresse'        => $v->patient->adresse,
+                        'ville'          => $v->patient->ville,
+                        'telephone'      => $v->patient->telephone,
+                    ] : null,
+                    'actes_count' => $v->actesRealises?->count() ?? 0,
+                ];
+            })->values(),
+        ]);
+    }
+
     // ── Helpers privés ────────────────────────────────────────────────────
 
     /**
@@ -256,7 +307,7 @@ class TourneeController extends Controller
             'id'                     => $t->id,
             'soignant_id'            => $t->soignant_id,
             'service_id'             => $t->service_id,
-            'date'                   => $t->date->format('d/m/Y'),
+            'date'                   => $t->date?->format('d/m/Y'),
             'vehicule'               => $t->vehicule,
             'heure_debut_prevue'     => $t->heure_debut_prevue,
             'heure_fin_prevue'       => $t->heure_fin_prevue,
@@ -270,8 +321,8 @@ class TourneeController extends Controller
             'patients_total'         => $t->visiteHads->count(),
             'patients_vus'           => $t->visiteHads->whereNotNull('visite_at')->count(),
             // Relations
-            'soignant'               => ['id' => $t->soignant->id, 'name' => $t->soignant->name],
-            'service'                => ['id' => $t->service->id, 'nom' => $t->service->nom, 'etage' => $t->service->etage],
+            'soignant'               => $t->soignant ? ['id' => $t->soignant->id, 'name' => $t->soignant->name] : null,
+            'service'                => $t->service ? ['id' => $t->service->id, 'nom' => $t->service->nom, 'etage' => $t->service->etage] : null,
             'visite_hads'            => $t->visiteHads->map(fn (VisiteHad $v) => [
                 'id'                    => $v->id,
                 'patient_id'            => $v->patient_id,
@@ -288,13 +339,13 @@ class TourneeController extends Controller
                 'tension'               => $v->tension,
                 'pouls'                 => $v->pouls,
                 'saturation'            => $v->saturation,
-                'patient'               => [
+                'patient'               => $v->patient ? [
                     'id'     => $v->patient->id,
                     'nom'    => $v->patient->nom,
                     'prenom' => $v->patient->prenom,
                     'sexe'   => $v->patient->sexe,
                     'age'    => $v->patient->age,
-                ],
+                ] : null,
             ])->values()->all(),
         ];
     }
