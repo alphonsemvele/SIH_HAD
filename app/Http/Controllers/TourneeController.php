@@ -27,7 +27,11 @@ class TourneeController extends Controller
             ->when($request->service_id,  fn ($q) => $q->where('service_id',  $request->service_id))
             ->when($request->soignant_id, fn ($q) => $q->where('soignant_id', $request->soignant_id))
             ->when($request->statut,      fn ($q) => $q->where('statut',      $request->statut))
-            ->whereDate('date', today())        // par défaut : tournées du jour
+            ->when($request->date_filter === 'upcoming', fn ($q) => $q->whereDate('date', '>', today()))
+            ->when($request->date_filter === 'past',     fn ($q) => $q->whereDate('date', '<', today()))
+            ->when($request->date_filter === null || $request->date_filter === 'today',
+                fn ($q) => $q->whereDate('date', today()))
+            ->orderBy('date')
             ->orderBy('heure_debut_prevue')
             ->get()
             ->map(fn (Tournee $t) => $this->formatTournee($t));

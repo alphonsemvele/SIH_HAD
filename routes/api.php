@@ -110,7 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{conversation}', [\App\Http\Controllers\MessageController::class, 'showConversation']);
     Route::put('/conversations/{conversation}/mark-as-read', [\App\Http\Controllers\MessageController::class, 'markConversationAsRead']);
     Route::delete('/conversations/{conversation}', [\App\Http\Controllers\MessageController::class, 'deleteConversation']);
-    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\MessageController::class, 'getMessages']);
+    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\MessageController::class, 'showConversation']);
     Route::post('/messages', [\App\Http\Controllers\MessageController::class, 'sendMessage']);
     Route::put('/messages/{message}/mark-as-read', [\App\Http\Controllers\MessageController::class, 'markAsRead']);
     

@@ -39,12 +39,31 @@ class MessageController extends Controller
         ]);
     }
 
-    public function showConversation(Request $request, Conversation $conversation)
+    public function showConversation(Request $request, $conversation = null)
     {
         $user = $request->user();
-        
+
+        // Workaround route model binding bug : récupérer l'ID depuis l'URL
+        $conversationId = $conversation;
+        if (is_object($conversation)) {
+            $conversationId = $conversation->id ?? null;
+        }
+        if (!$conversationId) {
+            // Fallback : extraire depuis URL /conversations/{id}/messages
+            $segments = $request->segments();
+            $idx = array_search('conversations', $segments);
+            if ($idx !== false && isset($segments[$idx + 1])) {
+                $conversationId = (int) $segments[$idx + 1];
+            }
+        }
+
+        $conversation = \App\Models\Conversation::find($conversationId);
+        if (!$conversation) {
+            return response()->json(['error' => 'Conversation non trouvée'], 404);
+        }
+
         // Vérifier que l'utilisateur participe à cette conversation
-        if (!$conversation->participants()->where('user_id', $user->id)->exists()) {
+        if (!$conversation->participants()->where('conversation_participants.user_id', $user->id)->exists()) {
             return response()->json(['error' => 'Non autorisé'], 403);
         }
 
@@ -306,4 +325,6 @@ class MessageController extends Controller
         
         return response()->json($stats);
     }
+
+
 }
