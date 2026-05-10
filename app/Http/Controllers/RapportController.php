@@ -160,29 +160,37 @@ class RapportController extends Controller
         return redirect()->back()->with('success', 'Rapport supprimé avec succès.');
     }
 
-    public function telecharger(Request $request, Rapport $rapport)
+    public function telecharger(Request $request, $rapport = null)
     {
-        // Logique de téléchargement du rapport (PDF, Word, etc.)
-        // Pour l'instant, retourner le contenu du rapport
-        
-        // Si la requête vient de l'API mobile → JSON
-        if ($request->is('api/*') || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'titre' => $rapport->titre,
-                    'contenu' => $rapport->contenu,
-                    'type' => $rapport->type,
-                    'date_rapport' => $rapport->date_rapport,
-                    'status' => $rapport->status,
-                    'patient' => $rapport->patient,
-                    'creator' => $rapport->creator,
-                ]
-            ]);
+        // Workaround route model binding bug : récupérer ID depuis URL
+        $rapportId = is_object($rapport) ? ($rapport->id ?? null) : $rapport;
+        if (!$rapportId) {
+            $segments = $request->segments();
+            $idx = array_search('rapports', $segments);
+            if ($idx !== false && isset($segments[$idx + 1])) {
+                $rapportId = (int) $segments[$idx + 1];
+            }
         }
-        
-        // Pour Web: retourner le fichier download
-        return response()->json($rapport);
+
+        $rapport = \App\Models\Rapport::with(['patient', 'creator'])->find($rapportId);
+        if (!$rapport) {
+            return response()->json(['success' => false, 'message' => 'Rapport introuvable'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $rapport->id,
+                'titre' => $rapport->titre,
+                'contenu' => $rapport->contenu,
+                'type' => $rapport->type,
+                'date_rapport' => $rapport->date_rapport,
+                'status' => $rapport->status,
+                'patient_nom' => $rapport->patient ? ($rapport->patient->nom . ' ' . $rapport->patient->prenom) : null,
+                'creator_nom' => $rapport->creator?->name,
+                'notes' => $rapport->notes,
+            ]
+        ]);
     }
 
     public function generer(Request $request): JsonResponse|RedirectResponse
