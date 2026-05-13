@@ -31,6 +31,9 @@ use App\Models\VisiteHad;
 // Routes publiques (pas besoin d'être connecté)
 Route::post('/login', [ApiAuthController::class, 'login']);
 
+// Création de demande de visite (publique - patient ou famille)
+Route::post('/demandes-visite', [\App\Http\Controllers\DemandeVisiteController::class, 'store']);
+
 // Routes protégées par token Sanctum
 Route::middleware('auth:sanctum')->group(function () {
     
@@ -179,4 +182,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('segur.access')->group(function () {
         Route::get('/admin/segur/indicateurs', [\App\Http\Controllers\SegurDashboardController::class, 'indicateurs']);
     });
+
+    // ─── DEMANDES DE VISITE À DOMICILE ───
+    Route::get('/demandes-visite', [\App\Http\Controllers\DemandeVisiteController::class, 'index']);
+    Route::get('/demandes-visite/{id}', [\App\Http\Controllers\DemandeVisiteController::class, 'show']);
+    Route::post('/demandes-visite/{id}/accepter', [\App\Http\Controllers\DemandeVisiteController::class, 'accepter']);
+    Route::post('/demandes-visite/{id}/refuser', [\App\Http\Controllers\DemandeVisiteController::class, 'refuser']);
+    Route::post('/demandes-visite/{id}/terminer', [\App\Http\Controllers\DemandeVisiteController::class, 'terminer']);
+    Route::delete('/demandes-visite/{id}', [\App\Http\Controllers\DemandeVisiteController::class, 'destroy']);
+
 });

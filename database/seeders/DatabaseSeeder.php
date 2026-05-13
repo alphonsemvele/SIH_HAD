@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
             AlertesDemoSeeder::class,
             PlanningDemoSeeder::class,
             RapportsDemoSeeder::class,
+            DemandesDemoSeeder::class,
             ConversationsDemoSeeder::class,
         ]);
 
