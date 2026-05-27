@@ -18,7 +18,6 @@ use App\Http\Controllers\Api\RealisationVisiteController;
 use App\Models\VisiteHad;
 
 use App\Http\Controllers\Api\Patient\PatientAuthController;
-use App\Http\Controllers\Api\Patient\PatientDemandeVisiteController;
 use App\Http\Controllers\Api\Patient\PatientVisitsController;
 
 /*
@@ -194,18 +193,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/demandes-visite/{id}/refuser', [\App\Http\Controllers\Api\DemandeVisiteController::class, 'refuser']);
     Route::post('/demandes-visite/{id}/terminer', [\App\Http\Controllers\Api\DemandeVisiteController::class, 'terminer']);
     Route::delete('/demandes-visite/{id}', [\App\Http\Controllers\Api\DemandeVisiteController::class, 'destroy']);
-});
 
-// ─── APP PATIENT ──────────────────────────────────────────────────────
-Route::prefix('patient')->group(function () {
+    Route::prefix('patient')->group(function () {
     Route::post('/login', [PatientAuthController::class, 'login']);
 
     Route::middleware(['auth:sanctum', 'patient.only'])->group(function () {
         Route::get('/me',      [PatientAuthController::class, 'me']);
         Route::post('/logout', [PatientAuthController::class, 'logout']);
         Route::get('/visites', [PatientVisitsController::class, 'index']);
-        Route::get('/demandes-visite', [PatientDemandeVisiteController::class, 'index']);
-        Route::post('/demandes-visite', [PatientDemandeVisiteController::class, 'store']);
-        Route::get('/demandes-visite/{id}', [PatientDemandeVisiteController::class, 'show']);
     });
+});
 });

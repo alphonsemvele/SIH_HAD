@@ -35,6 +35,7 @@ use HasFactory, Notifiable, HasApiTokens, LogsActivity;
         'fonction',
         'specialite',
         'service_id',
+        'patient_id',
         'date_embauche',
         'statut',
     ];

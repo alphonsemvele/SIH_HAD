@@ -13,6 +13,7 @@ class DemandeVisite extends Model
     protected $table = 'demandes_visite';
 
     protected $fillable = [
+        'patient_id',
         'patient_nom',
         'patient_telephone',
         'patient_age',

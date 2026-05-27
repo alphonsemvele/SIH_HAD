@@ -215,6 +215,39 @@ class DemoSeeder extends Seeder
                 ];
                 $patientIds[$p['numero_dossier']] = DB::table('patients')->insertGetId($insertData);
                 $this->command->info("  + Patient {$p['nom']} {$p['prenom']} (ID {$patientIds[$p['numero_dossier']]})");
+
+                // Ajoute le bloc suivant après la création de TOUS les patients, 
+// avant la section "─── 4. Patients HAD"
+
+// ─── 3bis. Créer un compte User patient pour les 2 premiers patients HAD ──
+$patientsAvecCompte = ['DEMO-CM-001', 'DEMO-CM-002'];  // adapte selon tes patients démo
+foreach ($patientsAvecCompte as $dossier) {
+    if (!isset($patientIds[$dossier])) continue;
+
+    $patient = collect($patients)->firstWhere('numero_dossier', $dossier);
+    if (!$patient) continue;
+
+    $email = strtolower(
+        \Illuminate\Support\Str::slug($patient['prenom']) . '.' .
+        \Illuminate\Support\Str::slug($patient['nom']) . '@patient.local'
+    );
+
+    DB::table('users')->updateOrInsert(
+    ['email' => $email],
+    [
+        'name'              => $patient['prenom'] . ' ' . $patient['nom'],
+        'password'          => bcrypt('patient123'),
+        'fonction'          => 'patient',         // ← changé de 'role' à 'fonction'
+        'patient_id'        => $patientIds[$dossier],
+        'email_verified_at' => now(),
+        'statut'            => 'actif',           // ← nécessaire à cause du CHECK statut
+        'created_at'        => now(),
+        'updated_at'        => now(),
+    ]
+);
+
+    $this->command->info("  + Compte patient : {$email} / patient123");
+}
             }
 
             // ─── 4. Patients HAD (6 sur 8) ────────────────────────────────────
@@ -421,6 +454,8 @@ class DemoSeeder extends Seeder
             $this->command->info('   medecin@sih.local    / demo123');
             $this->command->info('   infirmier@sih.local  / demo123  (Paul, tournée du jour)');
             $this->command->info('   infirmier2@sih.local / demo123  (Sophie, tournée hier)');
+            $this->command->info('   marie.kamga@patient.local  / patient123  (compte patient)');
+$this->command->info('   joseph.nguema@patient.local / patient123 (compte patient)');
         });
     }
 

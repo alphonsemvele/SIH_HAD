@@ -13,29 +13,37 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withMiddleware(function (Middleware $middleware) {
+    // ... ce qui existe déjà ...
+    $middleware->alias([
+        'auth.patient'  => \App\Http\Middleware\EnsurePatient::class,
+        'auth.soignant' => \App\Http\Middleware\EnsureSoignant::class,
+    ]);
+})
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
-
-        // Routes API : pas de CSRF, pas de sessions web
+        
+        // Configuration pour les routes API (pas de CSRF, pas de sessions web)
         $middleware->group('api', [
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
             \App\Http\Middleware\LogApiAccess::class,
         ]);
-
-        // Exclure /api/* de la protection CSRF
+        
+        // Exclure les routes API de la protection CSRF
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
 
-        // Alias de middlewares
-        $middleware->alias([
-            'segur.access' => \App\Http\Middleware\EnsureSegurAccess::class,
-            'patient.only' => \App\Http\Middleware\EnsurePatientRole::class,
-        ]);
+        // ← AJOUTE CE BLOC
+    $middleware->alias([
+        'segur.access' => \App\Http\Middleware\EnsureSegurAccess::class,
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+
+    
