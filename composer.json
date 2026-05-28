@@ -10,13 +10,20 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "*",
+        "endroid/qr-code": "*",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
+        "laravel/horizon": "*",
+        "laravel/sanctum": "*",
         "laravel/tinker": "^2.10.1",
-        "laravel/wayfinder": "*"
+        "laravel/wayfinder": "^0.1.11",
+        "spatie/laravel-activitylog": "*",
+        "spatie/laravel-backup": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "jasonmccreary/laravel-test-assertions": "*",
         "laravel-shift/blueprint": "*",
         "laravel/boost": "^1.1",
         "laravel/pail": "^1.2.2",

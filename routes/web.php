@@ -237,5 +237,36 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/patient',     fn () => Inertia::render('admin/patient'))    ->name('admin.patient');
     Route::get('/admin/agenda',      fn () => Inertia::render('admin/agenda'))     ->name('admin.agenda');
 
-    Route::get('/agenda', fn () => Inertia::render('dashboard/agenda'))->name('agenda.index');
+    Route::get('/admin/role', function () {
+        return Inertia::render('admin/role');
+    })->name('admin.role');
+
+    Route::get('/admin/services', function () {
+        return Inertia::render('admin/services');
+    })->name('admin.services');
+
+    Route::get('/admin/parameters', function () {
+        return Inertia::render('admin/parameters');
+    })->name('admin.parameters');
+
+    Route::get('/admin/session', function () {
+        return Inertia::render('admin/session');
+    })->name('admin.session');
+
+    Route::get('/admin/room', function () {
+        return Inertia::render('admin/room');
+    })->name('admin.room');
+
+    Route::get('/admin/patient', function () {
+        return Inertia::render('admin/patient');
+    })->name('admin.patient');
+
+    Route::get('/admin/agenda', function () {
+        return Inertia::render('admin/agenda');
+    })->name('admin.agenda');
+
+    // Tableau de bord Ségur
+    Route::get('/admin/segur/indicateurs', [SegurDashboardController::class, 'index'])
+        ->middleware('segur.access')
+        ->name('admin.segur.indicateurs');
 });

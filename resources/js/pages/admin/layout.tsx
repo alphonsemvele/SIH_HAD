@@ -89,6 +89,20 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                             </ul>
                         </div>
 
+                        {/* Ségur */}
+                        <div className="mb-6">
+                            {!sidebarCollapsed && (
+                                <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-widest text-[#52525B]">
+                                    Ségur
+                                </p>
+                            )}
+                            <ul className="space-y-1">
+                                <NavLink href="/admin/segur/indicateurs" icon={<ShieldCheckIcon />} active={isActive('/admin/segur')} collapsed={sidebarCollapsed}>
+                                    Indicateurs Ségur
+                                </NavLink>
+                            </ul>
+                        </div>
+
                   
 
                         {/* Système */}

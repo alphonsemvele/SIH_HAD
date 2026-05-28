@@ -13,7 +13,7 @@ use Inertia\Response;
 
 class ServiceController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $query = Service::with(['chefService', 'users', 'lits']);
 
@@ -59,8 +59,13 @@ class ServiceController extends Controller
         // Liste des médecins pour le chef de service
         $medecins = User::where('fonction', 'Médecin')
             ->where('statut', 'En service')
-            ->get(['id', 'name', 'lastname', 'matricule']);
+            ->get(['id', 'name', 'matricule']);
 
+        // Si la requête vient de l'API mobile → JSON
+        if ($request->is('api/*') || $request->wantsJson()) {
+            return response()->json($services);
+        }
+        
         return Inertia::render('dashboard/services', [
             'services' => $services,
             'stats' => $stats,

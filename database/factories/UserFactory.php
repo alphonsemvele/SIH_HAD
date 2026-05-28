@@ -13,8 +13,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'nom' => fake()->regexify('[A-Za-z0-9]{100}'),
-            'prenom' => fake()->regexify('[A-Za-z0-9]{100}'),
+            'name' => fake()->name(),
             'email' => fake()->safeEmail(),
             'email_verified_at' => fake()->dateTime(),
             'password' => fake()->password(),

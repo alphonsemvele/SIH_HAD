@@ -1,0 +1,92 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\QrCode;
+use App\Models\VisiteHad;
+use App\Services\Had\QrCodeService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+
+class QrCodeController extends Controller
+{
+    public function __construct(
+        private QrCodeService $qrCodeService
+    ) {}
+
+    public function store(int $visite): JsonResponse
+    {
+        $visiteHad = VisiteHad::findOrFail($visite);
+        $qrCode = $this->qrCodeService->generer($visiteHad);
+
+        return response()->json([
+            'uuid' => $qrCode->uuid,
+            'payload_signe' => $qrCode->payload_signe,
+            'creneau_debut' => $qrCode->creneau_debut,
+            'creneau_fin' => $qrCode->creneau_fin,
+            'statut' => $qrCode->statut,
+            'image_url' => url("/api/had/qr-codes/{$qrCode->uuid}/preview"),
+        ], 201);
+    }
+
+    public function preview(string $uuid): Response
+    {
+        $qrCode = QrCode::where('uuid', $uuid)->firstOrFail();
+        $url = config('services.qr.base_url', 'http://localhost:8000') . '/qr/' . $qrCode->uuid;
+
+        // Endroid v6 - API Builder
+        // Endroid v6 - constructor params direct
+        $endroidQr = new \Endroid\QrCode\QrCode(
+            data: $url,
+            size: 300,
+            margin: 10
+        );
+
+        $writer = new \Endroid\QrCode\Writer\PngWriter();
+        $result = $writer->write($endroidQr);
+
+        return response($result->getString())
+            ->header('Content-Type', $result->getMimeType())
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    public function scan(string $uuid, Request $request): JsonResponse
+    {
+        $qrCode = QrCode::where('uuid', $uuid)->firstOrFail();
+        $user = $request->user();
+
+        $result = $this->qrCodeService->scanner(
+            $qrCode,
+            $user,
+            $request->input('lat'),
+            $request->input('lng'),
+            $request->input('precision_m'),
+            $request->input('device_info')
+        );
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
+    public function revoquer(string $uuid, Request $request): JsonResponse
+    {
+        $qrCode = QrCode::where('uuid', $uuid)->firstOrFail();
+        $this->qrCodeService->revoquer($qrCode, $request->input('motif', 'non spécifié'));
+
+        return response()->json(['message' => 'QR code révoqué']);
+    }
+
+    public function regenerer(string $uuid): JsonResponse
+    {
+        $qrCode = QrCode::where('uuid', $uuid)->firstOrFail();
+        $nouveau = $this->qrCodeService->regenerer($qrCode);
+
+        return response()->json([
+            'uuid' => $nouveau->uuid,
+            'payload_signe' => $nouveau->payload_signe,
+            'creneau_debut' => $nouveau->creneau_debut,
+            'creneau_fin' => $nouveau->creneau_fin,
+            'statut' => $nouveau->statut,
+        ], 201);
+    }
+}

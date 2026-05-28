@@ -18,6 +18,23 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        // Routes API : pas de CSRF, pas de sessions web
+        $middleware->group('api', [
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
+            \App\Http\Middleware\LogApiAccess::class,
+        ]);
+
+        // Exclure /api/* de la protection CSRF
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
+
+        // Alias de middlewares
+        $middleware->alias([
+            'segur.access' => \App\Http\Middleware\EnsureSegurAccess::class,
+            'patient.only' => \App\Http\Middleware\EnsurePatientRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

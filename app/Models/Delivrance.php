@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Delivrance extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -58,5 +59,13 @@ class Delivrance extends Model
     public function ligneDelivrances(): HasMany
     {
         return $this->hasMany(LigneDelivrance::class);
+    }
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['date_delivrance', 'montant_total', 'montant_paye', 'mode_paiement', 'statut'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

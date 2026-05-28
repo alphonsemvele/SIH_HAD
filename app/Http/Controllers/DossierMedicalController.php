@@ -38,8 +38,8 @@ class DossierMedicalController extends Controller
         // Stats
         $stats = [
             'total' => DossierMedical::count(),
-            'actifs' => DossierMedical::where('statut', 'Actif')->count(),
-            'archives' => DossierMedical::where('statut', 'Archivé')->count(),
+            'actifs' => DossierMedical::where('statut', 'actif')->count(),
+            'archives' => DossierMedical::where('statut', 'archive')->count(),
             'mis_a_jour_aujourdhui' => DossierMedical::whereDate('updated_at', today())->count(),
         ];
 
@@ -99,7 +99,7 @@ class DossierMedicalController extends Controller
             'antecedents_medicaux' => 'nullable|array',
             'maladies_chroniques' => 'nullable|array',
             'notes_generales' => 'nullable|string',
-            'statut' => 'nullable|in:Actif,Archivé,Transféré',
+            'statut' => 'nullable|in:actif,inactif,archive,transfere',
         ]);
 
         $dossier->update($validated);

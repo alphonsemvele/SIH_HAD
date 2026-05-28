@@ -11,7 +11,7 @@ use Illuminate\Http\Response;
 
 class ExamenImagerieController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $examenImageries = ExamenImagerie::all();
     }

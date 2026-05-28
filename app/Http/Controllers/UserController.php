@@ -50,7 +50,7 @@ class UserController extends Controller
         ];
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $query = User::with('service');
 
@@ -157,4 +157,20 @@ class UserController extends Controller
         return redirect()->route('personnel.index')
             ->with('success', 'Personnel désactivé avec succès.');
     }
+
+    /**
+     * GET /api/users/{user}
+     */
+    public function show(\App\Models\User $user)
+    {
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'matricule' => $user->matricule ?? null,
+            ],
+        ]);
+    }
+
 }

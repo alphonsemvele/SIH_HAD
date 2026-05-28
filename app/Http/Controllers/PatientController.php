@@ -6,29 +6,31 @@ use App\Http\Requests\PatientStoreRequest;
 use App\Http\Requests\PatientUpdateRequest;
 use App\Models\Patient;
 use App\Models\DossierMedical;
-use Illuminate\Http\RedirectResponse;
+use App\Services\Patient\PatientCreationService;
+use App\Services\Patient\PatientSearchService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PatientController extends Controller
 {
-    public function index(Request $request): Response
+    public function __construct(
+        private PatientCreationService $patientCreationService,
+        private PatientSearchService $patientSearchService
+    ) {}
+
+    public function index(Request $request)
     {
+        // Utiliser le service de recherche
+        $patients = $this->patientSearchService->search(
+            $request->search ?? '',
+            $request->get('per_page', 10)
+        );
+
+        // Appliquer les filtres supplémentaires
         $query = Patient::query();
-
-        // Recherche
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('nom', 'like', "%{$search}%")
-                  ->orWhere('prenom', 'like', "%{$search}%")
-                  ->orWhere('numero_dossier', 'like', "%{$search}%")
-                  ->orWhere('telephone', 'like', "%{$search}%");
-            });
-        }
-
-        // Filtre par statut
+        
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
@@ -46,8 +48,16 @@ class PatientController extends Controller
             'urgences' => Patient::where('statut', Patient::STATUT_URGENCE)->count(),
         ];
 
-        $patients = $query->latest()->paginate(10)->withQueryString();
-
+        // Si la requête vient de l'API mobile → JSON
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'patients' => $patients,
+                'stats' => $stats,
+                'statuts' => Patient::getStatuts(),
+            ]);
+        }
+        
+        // Sinon (navigateur web) → Inertia
         return Inertia::render('dashboard/patients', [
             'patients' => $patients,
             'stats' => $stats,
@@ -56,19 +66,20 @@ class PatientController extends Controller
         ]);
     }
 
-    public function store(PatientStoreRequest $request): RedirectResponse
+    public function store(PatientStoreRequest $request): JsonResponse
     {
+        $data = $request->validated();
+        
         // Générer un numéro de dossier unique
         $numeroDossier = 'PAT-' . date('Y') . '-' . str_pad(Patient::count() + 1, 5, '0', STR_PAD_LEFT);
-
-        $data = $request->validated();
         
         // Convertir les allergies en array si c'est une string
         if (isset($data['allergies']) && is_string($data['allergies'])) {
             $data['allergies'] = array_map('trim', explode(',', $data['allergies']));
         }
 
-        $patient = Patient::create([
+        // Utiliser le service de création
+        $patient = $this->patientCreationService->create([
             ...$data,
             'numero_dossier' => $numeroDossier,
             'statut' => $data['statut'] ?? Patient::STATUT_CONSULTATION,
@@ -82,16 +93,34 @@ class PatientController extends Controller
             'groupe_sanguin' => $patient->groupe_sanguin,
             'allergies_confirmees' => $patient->allergies,
             'antecedents_medicaux' => $patient->antecedents_medicaux,
-            'statut' => 'Actif',
+            'statut' => 'actif',
         ]);
 
+        // Pour API: retourner JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Patient créé avec succès',
+                'data' => $patient->load(['dossierMedical'])
+            ], 201);
+        }
+        
+        // Pour Web: retourner redirect
         return redirect()->route('patients.index')
             ->with('success', 'Patient créé avec succès.');
     }
 
-    public function show(Patient $patient): Response
+    public function show(Patient $patient)
     {
-        $patient->load(['admissions', 'consultations', 'prescriptions', 'assurance', 'dossierMedical']);
+        // load() retiré : relations 'admissions','consultations','prescriptions','insurance','dossierMedical' non implémentées
+
+        // Si la requête vient de l'API mobile → JSON
+        if (request()->wantsJson() || request()->is('api/*')) {
+            return response()->json([
+                'patient' => $patient,
+                'statuts' => Patient::getStatuts(),
+            ]);
+        }
 
         return Inertia::render('dashboard/patients/show', [
             'patient' => $patient,
@@ -107,7 +136,7 @@ class PatientController extends Controller
         ]);
     }
 
-    public function update(PatientUpdateRequest $request, Patient $patient): RedirectResponse
+    public function update(PatientUpdateRequest $request, Patient $patient): JsonResponse
     {
         $data = $request->validated();
         
@@ -126,14 +155,33 @@ class PatientController extends Controller
             ]);
         }
 
+        // Pour API: retourner JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Patient mis à jour avec succès',
+                'data' => $patient->load(['dossierMedical'])
+            ], 200);
+        }
+        
+        // Pour Web: retourner redirect
         return redirect()->route('patients.index')
             ->with('success', 'Patient mis à jour avec succès.');
     }
 
-    public function destroy(Patient $patient): RedirectResponse
+    public function destroy(Patient $patient): JsonResponse
     {
         $patient->delete();
 
+        // Pour API: retourner JSON
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Patient supprimé avec succès',
+            ], 200);
+        }
+        
+        // Pour Web: retourner redirect
         return redirect()->route('patients.index')
             ->with('success', 'Patient supprimé avec succès.');
     }
@@ -150,4 +198,23 @@ class PatientController extends Controller
         return redirect()->back()
             ->with('success', 'Statut mis à jour avec succès.');
     }
+
+    /**
+     * GET /api/patients/{patient}/dossier-medical
+     * Retourne le dossier médical du patient pour le mobile.
+     */
+    public function dossierMedical(Patient $patient)
+    {
+        return response()->json([
+            'patient_id' => $patient->id,
+            'nom' => $patient->nom,
+            'prenom' => $patient->prenom,
+            'date_naissance' => $patient->date_naissance?->toDateString(),
+            'antecedents' => $patient->antecedents ?? [],
+            'allergies' => $patient->allergies ?? [],
+            'traitements_en_cours' => $patient->traitements_en_cours ?? [],
+            'message' => 'Dossier médical de base. Implémentation complète à venir.',
+        ]);
+    }
+
 }

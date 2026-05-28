@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'qr' => [
+        'signing_key' => env('QR_SIGNING_KEY'),
+        'base_url' => env('QR_BASE_URL', 'http://localhost:8000'),
+    ],
+
 ];

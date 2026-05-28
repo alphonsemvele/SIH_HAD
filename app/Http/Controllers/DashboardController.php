@@ -19,7 +19,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index()
     {
         // ── Détection dynamique des colonnes disponibles ──────────────
         $anomalieColumns  = Schema::getColumnListing('pharmacie_anomalies');

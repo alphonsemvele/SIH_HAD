@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\TypeExamenStoreRequest;
+use App\Http\Requests\TypeExamenUpdateRequest;
 use App\Models\TypeExamen;
 use App\Models\ModaliteImagerie;
 use Illuminate\Http\Request;
@@ -71,46 +73,23 @@ class TypeExamenController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(TypeExamenStoreRequest $request)
     {
-        $validated = $request->validate([
-            'code'                 => 'required|string|max:20|unique:type_examens,code',
-            'nom'                  => 'required|string|max:200',
-            'description'          => 'nullable|string',
-            'module'               => 'required|in:laboratoire,imagerie',
-            'categorie'            => 'nullable|string|max:100',
-            'modalite_imagerie_id' => 'nullable|integer|exists:modalite_imageries,id',
-            'duree_minutes'        => 'nullable|integer|min:1',
-            'prix'                 => 'nullable|numeric|min:0',
-            'actif'                => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         // Nettoyer selon le module
         if ($validated['module'] === 'laboratoire') {
             $validated['modalite_imagerie_id'] = null;
         }
-        // if ($validated['module'] === 'imagerie') {
-        //     $validated['categorie'] = null;
-        // }
 
         TypeExamen::create($validated);
 
         return back()->with('success', 'Type d\'examen créé avec succès.');
     }
 
-    public function update(Request $request, TypeExamen $typeExamen)
+    public function update(TypeExamenUpdateRequest $request, TypeExamen $typeExamen)
     {
-        $validated = $request->validate([
-            'code'                 => 'required|string|max:20|unique:type_examens,code,' . $typeExamen->id,
-            'nom'                  => 'required|string|max:200',
-            'description'          => 'nullable|string',
-            'module'               => 'required|in:laboratoire,imagerie',
-            'categorie'            => 'nullable|string|max:100',
-            'modalite_imagerie_id' => 'nullable|integer|exists:modalite_imageries,id',
-            'duree_minutes'        => 'nullable|integer|min:1',
-            'prix'                 => 'nullable|numeric|min:0',
-            'actif'                => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         if ($validated['module'] === 'laboratoire') {
             $validated['modalite_imagerie_id'] = null;

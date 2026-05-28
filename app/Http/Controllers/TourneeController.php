@@ -18,7 +18,7 @@ class TourneeController extends Controller
 {
     // ── Index ─────────────────────────────────────────────────────────────
 
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $tab = $request->input('tab', 'aujourdhui');
 
@@ -107,7 +107,7 @@ class TourneeController extends Controller
 
     // ── Show ──────────────────────────────────────────────────────────────
 
-    public function show(Tournee $tournee): Response
+    public function show(Request $request, Tournee $tournee)
     {
         $tournee->load([
             'soignant:id,name',
@@ -116,6 +116,10 @@ class TourneeController extends Controller
                                          ->orderBy('ordre'),
             'parent:id,date,heure_debut_prevue',
         ]);
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json(['tournee' => $this->formatTournee($tournee)]);
+        }
 
         return Inertia::render('Tournees/Show', [
             'tournee' => $this->formatTournee($tournee),
@@ -173,7 +177,6 @@ class TourneeController extends Controller
 
     public function demarrer(Tournee $tournee): RedirectResponse
     {
-        // Idempotent : déjà en cours → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_EN_COURS) {
             return redirect()->back();
         }
@@ -191,7 +194,6 @@ class TourneeController extends Controller
 
     public function terminer(Tournee $tournee): RedirectResponse
     {
-        // Idempotent : déjà terminée → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_TERMINEE) {
             return redirect()->back();
         }
@@ -209,7 +211,6 @@ class TourneeController extends Controller
 
     public function suspendre(Tournee $tournee): RedirectResponse
     {
-        // Idempotent : déjà planifiée (suspendue) → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_PLANIFIEE) {
             return redirect()->back();
         }
@@ -233,7 +234,6 @@ class TourneeController extends Controller
             'Impossible d\'annuler une tournée déjà terminée.'
         );
 
-        // Idempotent : déjà annulée → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_ANNULEE) {
             return redirect()->back();
         }
@@ -250,7 +250,6 @@ class TourneeController extends Controller
     {
         abort_if($visite->tournee_id !== $tournee->id, 404);
 
-        // Idempotent : visite déjà validée → on passe sans erreur
         if ($visite->visite_at !== null) {
             return redirect()->back();
         }
@@ -274,39 +273,83 @@ class TourneeController extends Controller
         return redirect()->back()->with('success', 'Visite de ' . $visite->patient->nom_complet . ' validée.');
     }
 
+    /**
+     * GET /api/tournees/{tournee}/visites
+     * Liste des visites d'une tournée pour le mobile.
+     */
+    public function visites(int $tournee)
+    {
+        $t = Tournee::with([
+            'visiteHads.patient',
+            'visiteHads.actesRealises',
+        ])->findOrFail($tournee);
+
+        return response()->json([
+            'tournee_id' => $t->id,
+            'visites'    => $t->visiteHads->map(function (VisiteHad $v) {
+                return [
+                    'id'                    => $v->id,
+                    'ordre'                 => $v->ordre,
+                    'priorite'              => $v->priorite,
+                    'chambre'               => $v->chambre,
+                    'lit'                   => $v->lit,
+                    'heure_prevue'          => $v->heure_prevue?->toIso8601String(),
+                    'visite_at'             => $v->visite_at?->toIso8601String(),
+                    'duree_prevue'          => $v->duree_prevue,
+                    'diagnostic'            => $v->diagnostic,
+                    'jours_hospitalisation' => $v->jours_hospitalisation,
+                    'observations'          => $v->observations,
+                    'temperature'           => $v->temperature,
+                    'tension'               => $v->tension,
+                    'pouls'                 => $v->pouls,
+                    'saturation'            => $v->saturation,
+                    'statut'                => $v->visite_at ? 'realisee' : 'planifiee',
+                    'patient'               => $v->patient ? [
+                        'id'             => $v->patient->id,
+                        'nom'            => $v->patient->nom,
+                        'prenom'         => $v->patient->prenom,
+                        'sexe'           => $v->patient->sexe,
+                        'date_naissance' => $v->patient->date_naissance?->toDateString(),
+                        'adresse'        => $v->patient->adresse,
+                        'ville'          => $v->patient->ville,
+                        'telephone'      => $v->patient->telephone,
+                    ] : null,
+                    'actes_count'           => $v->actesRealises?->count() ?? 0,
+                ];
+            })->values(),
+        ]);
+    }
+
     // ── Helpers privés ────────────────────────────────────────────────────
 
     private function formatTournee(Tournee $t): array
     {
         return [
-            'id'                     => $t->id,
-            'soignant_id'            => $t->soignant_id,
-            'service_id'             => $t->service_id,
-            // date est castée 'date' → Carbon → format OK
-            'date'                   => $t->date->format('Y-m-d'),
-            'vehicule'               => $t->vehicule,
-            // heures castées 'string' → valeur brute "HH:MM", pas besoin de ->format()
-            'heure_debut_prevue'     => $t->heure_debut_prevue,
-            'heure_fin_prevue'       => $t->heure_fin_prevue,
-            'heure_debut_effective'  => $t->heure_debut_effective,
-            'heure_fin_effective'    => $t->heure_fin_effective,
-            'heure_debut_2'          => $t->heure_debut_2,
-            'heure_debut_3'          => $t->heure_debut_3,
-            'kilometres'             => $t->kilometres,
-            'type'                   => $t->type,
-            'notes'                  => $t->notes,
-            'statut'                 => $t->statut,
-            'recurrence'             => $t->recurrence,
-            'jours_actifs'           => $t->jours_actifs ?? [],
-            'frequence_journaliere'  => $t->frequence_journaliere ?? 1,
-            // date_fin_recurrence est castée 'date' → Carbon → format OK
-            'date_fin_recurrence'    => $t->date_fin_recurrence?->format('Y-m-d'),
-            'recurrence_parent_id'   => $t->recurrence_parent_id,
-            'patients_total'         => $t->visiteHads->count(),
-            'patients_vus'           => $t->visiteHads->whereNotNull('visite_at')->count(),
-            'soignant'               => ['id' => $t->soignant->id, 'name' => $t->soignant->name],
-            'service'                => ['id' => $t->service->id, 'nom' => $t->service->nom, 'etage' => $t->service->etage],
-            'visite_hads'            => $t->visiteHads->map(fn (VisiteHad $v) => [
+            'id'                    => $t->id,
+            'soignant_id'           => $t->soignant_id,
+            'service_id'            => $t->service_id,
+            'date'                  => $t->date->format('Y-m-d'),
+            'vehicule'              => $t->vehicule,
+            'heure_debut_prevue'    => $t->heure_debut_prevue,
+            'heure_fin_prevue'      => $t->heure_fin_prevue,
+            'heure_debut_effective' => $t->heure_debut_effective,
+            'heure_fin_effective'   => $t->heure_fin_effective,
+            'heure_debut_2'         => $t->heure_debut_2,
+            'heure_debut_3'         => $t->heure_debut_3,
+            'kilometres'            => $t->kilometres,
+            'type'                  => $t->type,
+            'notes'                 => $t->notes,
+            'statut'                => $t->statut,
+            'recurrence'            => $t->recurrence,
+            'jours_actifs'          => $t->jours_actifs ?? [],
+            'frequence_journaliere' => $t->frequence_journaliere ?? 1,
+            'date_fin_recurrence'   => $t->date_fin_recurrence?->format('Y-m-d'),
+            'recurrence_parent_id'  => $t->recurrence_parent_id,
+            'patients_total'        => $t->visiteHads->count(),
+            'patients_vus'          => $t->visiteHads->whereNotNull('visite_at')->count(),
+            'soignant'              => ['id' => $t->soignant->id, 'name' => $t->soignant->name],
+            'service'               => ['id' => $t->service->id, 'nom' => $t->service->nom, 'etage' => $t->service->etage],
+            'visite_hads'           => $t->visiteHads->map(fn (VisiteHad $v) => [
                 'id'                    => $v->id,
                 'patient_id'            => $v->patient_id,
                 'ordre'                 => $v->ordre,
@@ -322,7 +365,8 @@ class TourneeController extends Controller
                 'tension'               => $v->tension,
                 'pouls'                 => $v->pouls,
                 'saturation'            => $v->saturation,
-                'patient'               => [
+                // ✅ CORRECTION : ternaire complète avec : null
+                'patient'               => $v->patient ? [
                     'id'     => $v->patient->id,
                     'nom'    => $v->patient->nom,
                     'prenom' => $v->patient->prenom,
@@ -330,7 +374,7 @@ class TourneeController extends Controller
                     'age'    => $v->patient->date_naissance
                                     ? Carbon::parse($v->patient->date_naissance)->age
                                     : null,
-                ],
+                ] : null,
             ])->values()->all(),
         ];
     }

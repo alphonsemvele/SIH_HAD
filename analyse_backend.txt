@@ -1,0 +1,1127 @@
+===== 1. ARBORESCENCE GLOBALE =====
+.
+├── analyse_backend.txt
+├── app
+│   ├── Http
+│   │   ├── Controllers
+│   │   ├── Middleware
+│   │   ├── Requests
+│   │   └── Resources
+│   ├── Models
+│   │   ├── ActeMedical.php
+│   │   ├── Admission.php
+│   │   ├── Alerte.php
+│   │   ├── AnalyseLaboratoire.php
+│   │   ├── Anomalie.php
+│   │   ├── Assurance.php
+│   │   ├── AuditLog.php
+│   │   ├── CategorieMedicament.php
+│   │   ├── Category.php
+│   │   ├── CommandeFournisseur.php
+│   │   ├── ConstanteVitale.php
+│   │   ├── Consultation.php
+│   │   ├── Conversation.php
+│   │   ├── Delivrance.php
+│   │   ├── DemandeConge.php
+│   │   ├── DossierMedical.php
+│   │   ├── ExamenImagerie.php
+│   │   ├── Facture.php
+│   │   ├── Fournisseur.php
+│   │   ├── HistoriqueLit.php
+│   │   ├── LigneCommande.php
+│   │   ├── LigneDelivrance.php
+│   │   ├── LigneFacture.php
+│   │   ├── LignePrescription.php
+│   │   ├── Lit.php
+│   │   ├── Medicament.php
+│   │   ├── Message.php
+│   │   ├── ModaliteImagerie.php
+│   │   ├── MouvementStock.php
+│   │   ├── OccupationRoom.php
+│   │   ├── Paiement.php
+│   │   ├── Parametre.php
+│   │   ├── PatientDossier.php
+│   │   ├── PatientHad.php
+│   │   ├── Patient.php
+│   │   ├── Permission.php
+│   │   ├── Planning.php
+│   │   ├── Pointage.php
+│   │   ├── prescriptionAnomalie.php
+│   │   ├── Prescription.php
+│   │   ├── Rapport.php
+│   │   ├── RendezVous.php
+│   │   ├── Role.php
+│   │   ├── Service.php
+│   │   ├── Tournee.php
+│   │   ├── TypeAnalyse.php
+│   │   ├── TypeExamenImagerie.php
+│   │   ├── TypeExamen.php
+│   │   ├── User.php
+│   │   └── VisiteHad.php
+│   └── Providers
+│       └── AppServiceProvider.php
+├── artisan
+├── auth_operations.log
+├── bootstrap
+│   ├── app.php
+│   ├── cache
+│   │   ├── packages.php
+│   │   └── services.php
+│   └── providers.php
+├── CLAUDE.md
+├── composer.json
+├── composer.lock
+├── config
+│   ├── app.php
+│   ├── auth.php
+│   ├── cache.php
+│   ├── database.php
+│   ├── filesystems.php
+│   ├── inertia.php
+│   ├── logging.php
+│   ├── mail.php
+│   ├── queue.php
+│   ├── sanctum.php
+│   ├── services.php
+│   └── session.php
+├── database
+│   ├── database.sqlite
+│   ├── factories
+│   │   ├── ActeMedicalFactory.php
+│   │   ├── AdmissionFactory.php
+│   │   ├── AnalyseLaboratoireFactory.php
+│   │   ├── AssuranceFactory.php
+│   │   ├── AuditLogFactory.php
+│   │   ├── CommandeFournisseurFactory.php
+│   │   ├── ConstanteVitaleFactory.php
+│   │   ├── ConsultationFactory.php
+│   │   ├── DelivranceFactory.php
+│   │   ├── DemandeCongeFactory.php
+│   │   ├── ExamenImagerieFactory.php
+│   │   ├── FactureFactory.php
+│   │   ├── FournisseurFactory.php
+│   │   ├── LigneCommandeFactory.php
+│   │   ├── LigneDelivranceFactory.php
+│   │   ├── LigneFactureFactory.php
+│   │   ├── LignePrescriptionFactory.php
+│   │   ├── LitFactory.php
+│   │   ├── MedicamentFactory.php
+│   │   ├── MouvementStockFactory.php
+│   │   ├── PaiementFactory.php
+│   │   ├── ParametreFactory.php
+│   │   ├── PatientFactory.php
+│   │   ├── PatientHadFactory.php
+│   │   ├── PermissionFactory.php
+│   │   ├── PointageFactory.php
+│   │   ├── PrescriptionFactory.php
+│   │   ├── RendezVousFactory.php
+│   │   ├── RoleFactory.php
+│   │   ├── ServiceFactory.php
+│   │   ├── TourneeFactory.php
+│   │   ├── TypeAnalyseFactory.php
+│   │   ├── TypeExamenImagerieFactory.php
+│   │   ├── UserFactory.php
+│   │   └── VisiteHadFactory.php
+│   ├── migrations
+│   │   ├── 0001_01_01_000000_create_users_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   ├── 0001_01_01_000002_create_jobs_table.php
+│   │   ├── 2026_01_30_084248_create_roles_table.php
+│   │   ├── 2026_01_30_084249_create_permissions_table.php
+│   │   ├── 2026_01_30_084250_create_services_table.php
+│   │   ├── 2026_01_30_084251_create_lits_table.php
+│   │   ├── 2026_01_30_084252_create_patients_table.php
+│   │   ├── 2026_01_30_084253_create_assurances_table.php
+│   │   ├── 2026_01_30_084254_create_admissions_table.php
+│   │   ├── 2026_01_30_084255_create_rendez_vouses_table.php
+│   │   ├── 2026_01_30_084256_create_consultations_table.php
+│   │   ├── 2026_01_30_084257_create_constante_vitales_table.php
+│   │   ├── 2026_01_30_084258_create_acte_medicals_table.php
+│   │   ├── 2026_01_30_084259_create_medicaments_table.php
+│   │   ├── 2026_01_30_084300_create_fournisseurs_table.php
+│   │   ├── 2026_01_30_084301_create_prescriptions_table.php
+│   │   ├── 2026_01_30_084302_create_ligne_prescriptions_table.php
+│   │   ├── 2026_01_30_084303_create_delivrances_table.php
+│   │   ├── 2026_01_30_084304_create_ligne_delivrances_table.php
+│   │   ├── 2026_01_30_084305_create_mouvement_stocks_table.php
+│   │   ├── 2026_01_30_084306_create_commande_fournisseurs_table.php
+│   │   ├── 2026_01_30_084307_create_ligne_commandes_table.php
+│   │   ├── 2026_01_30_084308_create_type_analyses_table.php
+│   │   ├── 2026_01_30_084309_create_analyse_laboratoires_table.php
+│   │   ├── 2026_01_30_084310_create_type_examen_imageries_table.php
+│   │   ├── 2026_01_30_084311_create_examen_imageries_table.php
+│   │   ├── 2026_01_30_084312_create_patient_hads_table.php
+│   │   ├── 2026_01_30_084313_create_tournees_table.php
+│   │   ├── 2026_01_30_084314_create_visite_hads_table.php
+│   │   ├── 2026_01_30_084315_create_factures_table.php
+│   │   ├── 2026_01_30_084316_create_ligne_factures_table.php
+│   │   ├── 2026_01_30_084317_create_paiements_table.php
+│   │   ├── 2026_01_30_084318_create_pointages_table.php
+│   │   ├── 2026_01_30_084319_create_demande_conges_table.php
+│   │   ├── 2026_01_30_084320_create_parametres_table.php
+│   │   ├── 2026_01_30_084321_create_audit_logs_table.php
+│   │   ├── 2026_01_30_084322_create_role_user_table.php
+│   │   ├── 2026_01_30_084323_create_permission_role_table.php
+│   │   ├── 2026_01_30_084324_create_categorie_medicaments_table.php
+│   │   ├── 2026_01_30_084325_create_type_examens_table.php
+│   │   ├── 2026_01_30_084326_create_modalite_imageries_table.php
+│   │   ├── 2026_01_30_084327_add_categorie_medicament_id_to_medicaments_table.php
+│   │   ├── 2026_01_30_084328_add_service_id_to_users_table.php
+│   │   ├── 2026_01_30_084329_add_modalite_imagerie_id_to_type_examens_table.php
+│   │   ├── 2026_01_30_084330_add_modalite_imagerie_id_to_examen_imageries_table.php
+│   │   ├── 2026_01_30_084332_update_lit_statut_enum.php
+│   │   ├── 2026_02_16_210319_create_dossiers_medicaux_table.php
+│   │   ├── 2026_02_16_211444_create_patient_dossiers_table.php
+│   │   ├── 2026_02_25_064435_create_occupation_rooms_table.php
+│   │   ├── 2026_02_25_065138_create_historique_lits_table.php
+│   │   ├── 2026_02_25_114013_create_pharmacie_anomalies_table.php
+│   │   ├── 2026_04_25_164518_create_personal_access_tokens_table.php
+│   │   ├── 2026_04_25_203000_create_alertes_table.php
+│   │   ├── 2026_04_25_204500_create_plannings_table.php
+│   │   ├── 2026_05_02_173000_create_conversations_table.php
+│   │   ├── 2026_05_02_173100_create_messages_table.php
+│   │   ├── 2026_05_02_173200_create_conversation_participants_table.php
+│   │   └── 2026_05_02_174000_create_rapports_table.php
+│   └── seeders
+│       ├── DatabaseSeeder.php
+│       ├── ParametreSeeder.php
+│       ├── PermissionSeeder.php
+│       ├── RoleSeeder.php
+│       ├── ServiceSeeder.php
+│       ├── TypeAnalyseSeeder.php
+│       ├── TypeExamenImagerieSeeder.php
+│       └── UserSeeder.php
+├── draft.yaml
+├── eslint.config.js
+├── final_operations.log
+├── operations.log
+├── package.json
+├── package-lock.json
+├── phpunit.xml
+├── public
+│   ├── apple-touch-icon.png
+│   ├── favicon.ico
+│   ├── favicon.svg
+│   ├── index.php
+│   ├── logo.svg
+│   └── robots.txt
+├── README.md
+├── README_TEST.md
+├── resources
+│   ├── css
+│   │   └── app.css
+│   ├── js
+│   │   ├── actions
+│   │   ├── app.tsx
+│   │   ├── lib
+│   │   ├── pages
+│   │   ├── routes
+│   │   ├── ssr.tsx
+│   │   ├── types
+│   │   └── wayfinder
+│   └── views
+│       ├── app.blade.php
+│       └── dashboard.blade.php
+├── routes
+│   ├── api.php
+│   ├── auth.php
+│   ├── console.php
+│   └── web.php
+├── simple_auth_operations.log
+├── test_auth_results.log
+├── test_final_results.log
+├── test_results.log
+├── tests
+│   ├── Feature
+│   │   ├── ExampleTest.php
+│   │   └── Http
+│   ├── TestCase.php
+│   └── Unit
+│       └── ExampleTest.php
+├── tests_endpoints.md
+├── test_sih_auth.sh
+├── test_sih_complete_final.sh
+├── test_sih_complete.sh
+├── test_sih_simple_auth.sh
+├── test_sih_simple.sh
+├── test_simple_auth_results.log
+├── tsconfig.json
+└── vite.config.ts
+
+32 directories, 216 files
+
+===== 2. APP/ (Models, Controllers, Services, Jobs) =====
+app/
+├── Http
+│   ├── Controllers
+│   │   ├── Admin
+│   │   │   ├── AdminRoleController.php
+│   │   │   └── AdminUserController.php
+│   │   ├── AdmissionController.php
+│   │   ├── AlerteController.php
+│   │   ├── AnalyseLaboratoireController.php
+│   │   ├── AnomalieController.php
+│   │   ├── ApiAuthController.php
+│   │   ├── AssuranceController.php
+│   │   ├── Auth
+│   │   │   └── LoginController.php
+│   │   ├── CategorieMedicamentController.php
+│   │   ├── ConstanteVitaleController.php
+│   │   ├── ConsultationController.php
+│   │   ├── Controller.php
+│   │   ├── DashboardController.php
+│   │   ├── DelivranceController.php
+│   │   ├── DemandeCongeController.php
+│   │   ├── DossierMedicalController.php
+│   │   ├── ExamenImagerieController.php
+│   │   ├── FactureController.php
+│   │   ├── FournisseurController.php
+│   │   ├── ImagerieController.php
+│   │   ├── LaboratoireController.php
+│   │   ├── LitController.php
+│   │   ├── MapController.php
+│   │   ├── MedicamentController.php
+│   │   ├── MessageController.php
+│   │   ├── ModaliteImagerieController.php
+│   │   ├── MouvementStockController.php
+│   │   ├── OccupationRoomController.php
+│   │   ├── PaiementController.php
+│   │   ├── PatientController.php
+│   │   ├── PatientDossierController.php
+│   │   ├── PatientHadController.php
+│   │   ├── PlanningController.php
+│   │   ├── PointageController.php
+│   │   ├── PrescriptionController.php
+│   │   ├── RapportController.php
+│   │   ├── RendezVousController.php
+│   │   ├── RoleController.php
+│   │   ├── ServiceController.php
+│   │   ├── TourneeController.php
+│   │   ├── TypeExamenController.php
+│   │   ├── UserController.php
+│   │   └── VisiteHadController.php
+│   ├── Middleware
+│   │   ├── ExcludeCsrfForApi.php
+│   │   └── HandleInertiaRequests.php
+│   ├── Requests
+│   │   ├── AdmissionStoreRequest.php
+│   │   ├── AdmissionUpdateRequest.php
+│   │   ├── AnalyseLaboratoireStoreRequest.php
+│   │   ├── AnalyseLaboratoireUpdateRequest.php
+│   │   ├── AnomalieStoreRequest.php
+│   │   ├── AnomalieUpdateRequest.php
+│   │   ├── AssuranceStoreRequest.php
+│   │   ├── AssuranceUpdateRequest.php
+│   │   ├── Auth
+│   │   │   └── LoginRequest.php
+│   │   ├── CategorieMedicamentStoreRequest.php
+│   │   ├── CategorieMedicamentUpdateRequest.php
+│   │   ├── ConstanteVitaleStoreRequest.php
+│   │   ├── ConstanteVitaleUpdateRequest.php
+│   │   ├── ConsultationStoreRequest.php
+│   │   ├── ConsultationUpdateRequest.php
+│   │   ├── DelivranceStoreRequest.php
+│   │   ├── DelivranceUpdateRequest.php
+│   │   ├── DemandeCongeStoreRequest.php
+│   │   ├── DemandeCongeUpdateRequest.php
+│   │   ├── ExamenImagerieStoreRequest.php
+│   │   ├── ExamenImagerieUpdateRequest.php
+│   │   ├── FactureStoreRequest.php
+│   │   ├── FactureUpdateRequest.php
+│   │   ├── FournisseurStoreRequest.php
+│   │   ├── FournisseurUpdateRequest.php
+│   │   ├── LitStoreRequest.php
+│   │   ├── LitUpdateRequest.php
+│   │   ├── MedicamentStoreRequest.php
+│   │   ├── MedicamentUpdateRequest.php
+│   │   ├── ModaliteImagerieStoreRequest.php
+│   │   ├── ModaliteImagerieUpdateRequest.php
+│   │   ├── MouvementStockStoreRequest.php
+│   │   ├── MouvementStockUpdateRequest.php
+│   │   ├── OccupationStoreRequest.php
+│   │   ├── PaiementStoreRequest.php
+│   │   ├── PaiementUpdateRequest.php
+│   │   ├── PatientHadStoreRequest.php
+│   │   ├── PatientHadUpdateRequest.php
+│   │   ├── PatientStoreRequest.php
+│   │   ├── PatientUpdateRequest.php
+│   │   ├── PointageStoreRequest.php
+│   │   ├── PointageUpdateRequest.php
+│   │   ├── PrescriptionStoreRequest.php
+│   │   ├── PrescriptionUpdateRequest.php
+│   │   ├── RendezVouStoreRequest.php
+│   │   ├── RendezVouUpdateRequest.php
+│   │   ├── RoleStoreRequest.php
+│   │   ├── RoleUpdateRequest.php
+│   │   ├── ServiceStoreRequest.php
+│   │   ├── ServiceUpdateRequest.php
+│   │   ├── TourneeStoreRequest.php
+│   │   ├── TourneeUpdateRequest.php
+│   │   ├── TypeExamenStoreRequest.php
+│   │   ├── TypeExamenUpdateRequest.php
+│   │   ├── UserStoreRequest.php
+│   │   ├── UserUpdateRequest.php
+│   │   ├── VisiteHadStoreRequest.php
+│   │   └── VisiteHadUpdateRequest.php
+│   └── Resources
+│       ├── AdmissionResource.php
+│       ├── AnalyseLaboratoireResource.php
+│       ├── AssuranceResource.php
+│       ├── ConstanteVitaleResource.php
+│       ├── ConsultationResource.php
+│       ├── DelivranceResource.php
+│       ├── DemandeCongeResource.php
+│       ├── ExamenImagerieResource.php
+│       ├── FactureResource.php
+│       ├── FournisseurResource.php
+│       ├── LitResource.php
+│       ├── MedicamentResource.php
+│       ├── MouvementStockResource.php
+│       ├── OccupationRoomResource.php
+│       ├── PaiementResource.php
+│       ├── PatientHadResource.php
+│       ├── PointageResource.php
+│       ├── PrescriptionResource.php
+│       ├── RendezVouResource.php
+│       ├── RoleResource.php
+│       ├── ServiceResource.php
+│       ├── TourneeResource.php
+│       ├── UserResource.php
+│       └── VisiteHadResource.php
+├── Models
+│   ├── ActeMedical.php
+│   ├── Admission.php
+│   ├── Alerte.php
+│   ├── AnalyseLaboratoire.php
+│   ├── Anomalie.php
+│   ├── Assurance.php
+│   ├── AuditLog.php
+│   ├── CategorieMedicament.php
+│   ├── Category.php
+│   ├── CommandeFournisseur.php
+│   ├── ConstanteVitale.php
+│   ├── Consultation.php
+│   ├── Conversation.php
+│   ├── Delivrance.php
+│   ├── DemandeConge.php
+│   ├── DossierMedical.php
+│   ├── ExamenImagerie.php
+│   ├── Facture.php
+│   ├── Fournisseur.php
+│   ├── HistoriqueLit.php
+│   ├── LigneCommande.php
+│   ├── LigneDelivrance.php
+│   ├── LigneFacture.php
+│   ├── LignePrescription.php
+│   ├── Lit.php
+│   ├── Medicament.php
+│   ├── Message.php
+│   ├── ModaliteImagerie.php
+│   ├── MouvementStock.php
+│   ├── OccupationRoom.php
+│   ├── Paiement.php
+│   ├── Parametre.php
+│   ├── PatientDossier.php
+│   ├── PatientHad.php
+│   ├── Patient.php
+│   ├── Permission.php
+│   ├── Planning.php
+│   ├── Pointage.php
+│   ├── prescriptionAnomalie.php
+│   ├── Prescription.php
+│   ├── Rapport.php
+│   ├── RendezVous.php
+│   ├── Role.php
+│   ├── Service.php
+│   ├── Tournee.php
+│   ├── TypeAnalyse.php
+│   ├── TypeExamenImagerie.php
+│   ├── TypeExamen.php
+│   ├── User.php
+│   └── VisiteHad.php
+└── Providers
+    └── AppServiceProvider.php
+
+11 directories, 179 files
+
+===== 3. ROUTES API =====
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ApiAuthController;
+use App\Http\Controllers\PatientController;
+use App\Http\Controllers\TourneeController;
+use App\Http\Controllers\LitController;
+use App\Http\Controllers\MedicamentController;
+use App\Http\Controllers\CategorieMedicamentController;
+use App\Http\Controllers\FournisseurController;
+use App\Http\Controllers\AnalyseLaboratoireController;
+use App\Http\Controllers\ExamenImagerieController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\RoleController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
+
+// Routes publiques (pas besoin d'être connecté)
+Route::post('/login', [ApiAuthController::class, 'login']);
+
+// Routes protégées par token Sanctum
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Auth
+    Route::post('/logout', [ApiAuthController::class, 'logout']);
+    Route::get('/me', [ApiAuthController::class, 'me']);
+    Route::post('/refresh', [ApiAuthController::class, 'refresh']);
+    
+    // Patients
+    Route::get('/patients/search', [PatientController::class, 'search']);
+    Route::apiResource('patients', PatientController::class);
+    Route::get('/patients/{patient}/dossier-medical', [PatientController::class, 'dossierMedical']);
+    Route::post('/patients/{patient}/constantes', [PatientController::class, 'ajouterConstantes']);
+    
+    // Tournées
+    Route::apiResource('tournees', TourneeController::class);
+    Route::post('/tournees/{tournee}/demarrer', [TourneeController::class, 'demarrer']);
+    Route::post('/tournees/{tournee}/terminer', [TourneeController::class, 'terminer']);
+    Route::post('/tournees/{tournee}/suspendre', [TourneeController::class, 'suspendre']);
+    Route::post('/tournees/{tournee}/annuler', [TourneeController::class, 'annuler']);
+    Route::get('/tournees/{tournee}/visites', [TourneeController::class, 'visites']);
+    Route::post('/tournees/{tournee}/visites/{visite}/valider', [TourneeController::class, 'validerVisite']);
+    
+    // Lits
+    Route::get('/lits/occupations', [LitController::class, 'occupations']);
+    Route::apiResource('lits', LitController::class);
+    Route::post('/lits/{lit}/occuper', [LitController::class, 'occuper']);
+    Route::post('/lits/{lit}/liberer', [LitController::class, 'liberer']);
+    
+    // Pharmacie
+    Route::apiResource('medicaments', MedicamentController::class);
+    Route::apiResource('categories', CategorieMedicamentController::class);
+    Route::apiResource('fournisseurs', FournisseurController::class);
+    
+    // Laboratoire
+    Route::apiResource('analyses', AnalyseLaboratoireController::class);
+    
+    // Imagerie
+    Route::apiResource('imagerie', ExamenImagerieController::class);
+    Route::apiResource('modalite-imagerie', 'App\Http\Controllers\ModaliteImagerieController');
+    
+    // Services
+    Route::apiResource('services', ServiceController::class);
+    
+    // Soignants
+    Route::get('/soignants', function () {
+        return \App\Models\User::select('id', 'name')->orderBy('name')->get();
+    });
+    
+    // Administration
+    Route::apiResource('users', UserController::class);
+    Route::apiResource('roles', RoleController::class);
+    
+    // Carte et Localisation
+    Route::get('/patients/map', [\App\Http\Controllers\MapController::class, 'patientsMap']);
+    Route::get('/patients/geolocalises', [\App\Http\Controllers\MapController::class, 'patientsGeolocalises']);
+    Route::get('/patients/{patient}/geolocalisation', [\App\Http\Controllers\MapController::class, 'patientGeolocalisation']);
+    Route::put('/patients/{patient}/geolocalisation', [\App\Http\Controllers\MapController::class, 'updatePatientGeolocalisation']);
+    Route::get('/zones-visites', [\App\Http\Controllers\MapController::class, 'zonesVisites']);
+    Route::post('/itineraire/optimiser', [\App\Http\Controllers\MapController::class, 'itineraireOptimise']);
+    Route::get('/zones/statistiques', [\App\Http\Controllers\MapController::class, 'statistiquesZones']);
+
+    // Rapports
+    Route::apiResource('rapports', \App\Http\Controllers\RapportController::class);
+    Route::get('/rapports/{rapport}/telecharger', [\App\Http\Controllers\RapportController::class, 'telecharger']);
+    Route::post('/rapports/generer', [\App\Http\Controllers\RapportController::class, 'generer']);
+    Route::get('/rapports/types', [\App\Http\Controllers\RapportController::class, 'getTypes']);
+    Route::get('/rapports/stats', [\App\Http\Controllers\RapportController::class, 'getStats']);
+    
+    // Messagerie
+    Route::get('/conversations', [\App\Http\Controllers\MessageController::class, 'conversations']);
+    Route::post('/conversations', [\App\Http\Controllers\MessageController::class, 'createConversation']);
+    Route::get('/conversations/{conversation}', [\App\Http\Controllers\MessageController::class, 'showConversation']);
+    Route::put('/conversations/{conversation}/mark-as-read', [\App\Http\Controllers\MessageController::class, 'markConversationAsRead']);
+    Route::delete('/conversations/{conversation}', [\App\Http\Controllers\MessageController::class, 'deleteConversation']);
+    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\MessageController::class, 'getMessages']);
+    Route::post('/messages', [\App\Http\Controllers\MessageController::class, 'sendMessage']);
+    Route::put('/messages/{message}/mark-as-read', [\App\Http\Controllers\MessageController::class, 'markAsRead']);
+    Route::delete('/messages/{message}', [\App\Http\Controllers\MessageController::class, 'deleteMessage']);
+    Route::get('/users/available-for-chat', [\App\Http\Controllers\MessageController::class, 'getAvailableUsers']);
+    Route::get('/messaging/stats', [\App\Http\Controllers\MessageController::class, 'getStats']);
+    
+    // Planning
+    Route::apiResource('planning', \App\Http\Controllers\PlanningController::class);
+    
+    // Alertes
+    Route::apiResource('alertes', \App\Http\Controllers\AlerteController::class);
+    
+    // Anomalies
+    Route::post('/anomalies', [\App\Http\Controllers\AnomalieController::class, 'store']);
+    Route::get('/anomalies', [\App\Http\Controllers\AnomalieController::class, 'index']);
+    Route::put('/anomalies/{anomalie}', [\App\Http\Controllers\AnomalieController::class, 'update']);
+    
+    // Dashboard
+    Route::get('/dashboard/stats', [\App\Http\Controllers\DashboardController::class, 'stats']);
+    Route::get('/dashboard/tournees-actives', [\App\Http\Controllers\DashboardController::class, 'tourneesActives']);
+});
+
+===== 4. ROUTES WEB =====
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PatientController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\DossierMedicalController;
+use App\Http\Controllers\CategorieMedicamentController;
+use App\Http\Controllers\FournisseurController;
+use App\Http\Controllers\MedicamentController;
+use App\Http\Controllers\TypeExamenController;
+use App\Http\Controllers\LaboratoireController;
+use App\Http\Controllers\ImagerieController;
+use App\Http\Controllers\ModaliteImagerieController;
+use App\Http\Controllers\LitController;
+use App\Http\Controllers\OccupationRoomController;
+use App\Http\Controllers\TourneeController;
+use App\Http\Controllers\AnomalieController;
+use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminRoleController;
+
+Route::middleware(['auth', 'verified'])
+    ->prefix('anomalies')
+    ->name('anomalies.')
+    ->group(function () {
+        Route::get('/',              [AnomalieController::class, 'index'])  ->name('index');
+        Route::post('/',             [AnomalieController::class, 'store'])  ->name('store');
+        Route::put('/{anomalie}',    [AnomalieController::class, 'update']) ->name('update');
+        Route::delete('/{anomalie}', [AnomalieController::class, 'destroy'])->name('destroy');
+    });
+
+Route::middleware(['auth'])->prefix('tournees')->name('tournees.')->group(function () {
+
+    // CRUD de base
+    Route::get('/',              [TourneeController::class, 'index'])   ->name('index');
+    Route::post('/',             [TourneeController::class, 'store'])   ->name('store');
+    Route::get('/{tournee}',     [TourneeController::class, 'show'])    ->name('show');
+    Route::put('/{tournee}',     [TourneeController::class, 'update'])  ->name('update');
+    Route::delete('/{tournee}',  [TourneeController::class, 'destroy']) ->name('destroy');
+
+    // Actions métier
+    Route::post('/{tournee}/demarrer',  [TourneeController::class, 'demarrer'])  ->name('demarrer');
+    Route::post('/{tournee}/terminer',  [TourneeController::class, 'terminer'])  ->name('terminer');
+    Route::post('/{tournee}/suspendre', [TourneeController::class, 'suspendre']) ->name('suspendre');
+    Route::post('/{tournee}/annuler',   [TourneeController::class, 'annuler'])   ->name('annuler');
+
+    // Visites individuelles
+    Route::post('/{tournee}/visites/{visite}/valider', [TourneeController::class, 'validerVisite'])
+         ->name('visites.valider');
+});
+
+
+Route::middleware(['auth', 'verified'])->prefix('lits/occupations')->name('occupations.')->group(function () {
+    Route::get('/',                              [OccupationRoomController::class, 'index'])->name('index');
+
+    // ↓ Routes statiques — TOUJOURS avant /{occupationRoom}
+    Route::get('/create',                        [OccupationRoomController::class, 'create'])->name('create');
+    Route::get('/lit/{lit}',                     [OccupationRoomController::class, 'parLit'])->name('par-lit');
+
+    Route::post('/',                             [OccupationRoomController::class, 'store'])->name('store');
+
+    // ↓ Route dynamique en dernier
+    Route::get('/{occupationRoom}',              [OccupationRoomController::class, 'show'])->name('show');
+    Route::post('/{occupationRoom}/terminer',    [OccupationRoomController::class, 'terminer'])->name('terminer');
+    Route::post('/{occupationRoom}/transferer',  [OccupationRoomController::class, 'transferer'])->name('transferer');
+});
+Route::middleware(['auth', 'verified'])->prefix('lits')->name('lits.')->group(function () {
+
+    // ── Vue principale ─────────────────────────────────────────────────
+    Route::get('/',          [LitController::class, 'index'])->name('index');
+    Route::get('/historique', [LitController::class, 'historique'])->name('historique');
+
+    // ── CRUD Lits ──────────────────────────────────────────────────────
+    Route::post('/',          [LitController::class, 'store'])->name('store');
+    Route::get('/{lit}',      [LitController::class, 'show'])->name('show');
+    Route::put('/{lit}',      [LitController::class, 'update'])->name('update');
+    Route::delete('/{lit}',   [LitController::class, 'destroy'])->name('destroy');
+
+    // ── Actions sur un lit ─────────────────────────────────────────────
+    Route::post('/{lit}/nettoyage',   [LitController::class, 'marquerNettoyage'])->name('nettoyage');
+    Route::post('/{lit}/disponible',  [LitController::class, 'marquerDisponible'])->name('disponible');
+    Route::post('/{lit}/hors-service', [LitController::class, 'horsService'])->name('hors-service');
+    Route::post('/{lit}/transferer',  [LitController::class, 'transfererLit'])->name('transferer-lit');
+
+    // ── Occupations ─────────────────────────────────────────────────────
+   
+
+    // ── Vue chambres par service ────────────────────────────────────────
+    Route::get('/service/{service}/chambres', [OccupationRoomController::class, 'chambre'])->name('chambres');
+
+    // ── Services ────────────────────────────────────────────────────────
+    Route::prefix('services')->name('services.')->group(function () {
+        Route::post('/',               [ServiceController::class, 'store'])->name('store');
+        Route::put('/{service}',       [ServiceController::class, 'update'])->name('update');
+        Route::delete('/{service}',    [ServiceController::class, 'destroy'])->name('destroy');
+    });
+});
+// Page d'accueil → login
+Route::get('/', function () {
+    return Inertia::render('index');
+})->name('home');
+
+
+// Route::get('/login', function () {
+//     return Inertia::render('auth/login');
+// })->name('login');
+
+// Inclure les routes d'authentification
+require __DIR__.'/auth.php';
+
+// Routes protégées par auth
+Route::middleware(['auth'])->group(function () {
+
+
+
+
+    Route::get('/type-examens', [TypeExamenController::class, 'index'])->name('type-examens.index');
+Route::post('/type-examens', [TypeExamenController::class, 'store'])->name('type-examens.store');
+Route::put('/type-examens/{typeExamen}', [TypeExamenController::class, 'update'])->name('type-examens.update');
+Route::delete('/type-examens/{typeExamen}', [TypeExamenController::class, 'destroy'])->name('type-examens.destroy');
+
+// Laboratoire — utilise AnalyseLaboratoire
+Route::get('/laboratoire', [LaboratoireController::class, 'index'])->name('laboratoire.index');
+Route::post('/laboratoire', [LaboratoireController::class, 'store'])->name('laboratoire.store');
+Route::put('/laboratoire/{analyseLaboratoire}/statut', [LaboratoireController::class, 'updateStatut'])->name('laboratoire.statut');
+Route::post('/laboratoire/{analyseLaboratoire}/resultats', [LaboratoireController::class, 'storeResultats'])->name('laboratoire.resultats');
+Route::put('/laboratoire/{analyseLaboratoire}/valider', [LaboratoireController::class, 'valider'])->name('laboratoire.valider');
+Route::delete('/laboratoire/{analyseLaboratoire}', [LaboratoireController::class, 'destroy'])->name('laboratoire.destroy');
+
+// Imagerie
+Route::get('/imagerie', [ImagerieController::class, 'index'])->name('imagerie.index');
+Route::post('/imagerie', [ImagerieController::class, 'store'])->name('imagerie.store');
+Route::put('/imagerie/{examenImagerie}/statut', [ImagerieController::class, 'updateStatut'])->name('imagerie.statut');
+Route::post('/imagerie/{examenImagerie}/conclusion', [ImagerieController::class, 'storeConclusion'])->name('imagerie.conclusion');
+Route::delete('/imagerie/{examenImagerie}', [ImagerieController::class, 'destroy'])->name('imagerie.destroy');
+
+
+// Modalités d'imagerie
+Route::get('/modalite-imagerie', [ModaliteImagerieController::class, 'index'])->name('modalite-imagerie.index');
+Route::post('/modalite-imagerie', [ModaliteImagerieController::class, 'store'])->name('modalite-imagerie.store');
+Route::put('/modalite-imagerie/{modaliteImagerie}', [ModaliteImagerieController::class, 'update'])->name('modalite-imagerie.update');
+Route::delete('/modalite-imagerie/{modaliteImagerie}', [ModaliteImagerieController::class, 'destroy'])->name('modalite-imagerie.destroy');
+
+
+
+     Route::get('/categories',        [CategorieMedicamentController::class, 'index'])->name('categories.index');
+    Route::post('/categories',       [CategorieMedicamentController::class, 'store'])->name('categories.store');
+    Route::put('/categories/{categorieMedicament}',    [CategorieMedicamentController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{categorieMedicament}', [CategorieMedicamentController::class, 'destroy'])->name('categories.destroy');
+
+    // Fournisseurs
+    Route::get('/fournisseurs',        [FournisseurController::class, 'index'])->name('fournisseurs.index');
+    Route::post('/fournisseurs',       [FournisseurController::class, 'store'])->name('fournisseurs.store');
+    Route::put('/fournisseurs/{fournisseur}',    [FournisseurController::class, 'update'])->name('fournisseurs.update');
+    Route::delete('/fournisseurs/{fournisseur}', [FournisseurController::class, 'destroy'])->name('fournisseurs.destroy');
+
+    // Routes dossiers médicaux
+Route::get('/dossiers-medicaux', [DossierMedicalController::class, 'index'])->name('dossiers-medicaux.index');
+Route::get('/patients/{patient}/dossier-medical', [DossierMedicalController::class, 'show'])->name('patients.dossier-medical');
+Route::put('/dossiers-medicaux/{dossier}', [DossierMedicalController::class, 'update'])->name('dossiers-medicaux.update');
+    
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    Route::resource('patients', PatientController::class);
+
+      Route::resource('personnel', UserController::class)->parameters([
+        'personnel' => 'user'
+    ]);
+
+     Route::resource('services', ServiceController::class);
+    Route::patch('services/{service}/toggle-status', [ServiceController::class, 'toggleStatus'])->name('services.toggle-status');
+
+ 
+  Route::get('/medicaments',              [MedicamentController::class, 'index'])->name('medicaments.index');
+Route::post('/medicaments',             [MedicamentController::class, 'store'])->name('medicaments.store');
+Route::put('/medicaments/{medicament}', [MedicamentController::class, 'update'])->name('medicaments.update');
+Route::delete('/medicaments/{medicament}', [MedicamentController::class, 'destroy'])->name('medicaments.destroy');
+
+ 
+Route::get('/admin/roles', [AdminRoleController::class, 'index'])->name('admin.roles.index');
+Route::post('/admin/roles', [AdminRoleController::class, 'store'])->name('admin.roles.store');
+Route::put('/admin/roles/{role}', [AdminRoleController::class, 'update'])->name('admin.roles.update');
+Route::delete('/admin/roles/{role}', [AdminRoleController::class, 'destroy'])->name('admin.roles.destroy');
+
+Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.utilisateurs.index');
+Route::post('/admin/users', [AdminUserController::class, 'store'])->name('admin.utilisateurs.store');
+Route::put('/admin/users/{user}', [AdminUserController::class, 'update'])->name('admin.utilisateurs.update');
+Route::patch('/admin/users/{user}/statut', [AdminUserController::class, 'updateStatut'])->name('admin.utilisateurs.statut');
+Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy'])->name('admin.utilisateurs.destroy');
+
+    // Route::get('/personnel', function () {
+    //     return Inertia::render('dashboard/personnel');
+    // })->name('personnel.index');
+
+    Route::get('/prescription', function () {
+        return Inertia::render('dashboard/prescription');
+    })->name('prescriptions.index');
+
+  Route::get('/admin/permissions', function () {
+        return Inertia::render('admin/permission');
+    })->name('permissions.index');
+
+
+
+
+
+    Route::get('/agenda', function () {
+        return Inertia::render('dashboard/agenda');
+    })->name('agenda.index');
+
+    // Admin routes
+    Route::get('/admin', function () {
+        return Inertia::render('admin/index');
+    })->name('admin.index');
+
+ 
+
+    Route::get('/admin/role', function () {
+        return Inertia::render('admin/role');
+    })->name('admin.role');
+
+    Route::get('/admin/services', function () {
+        return Inertia::render('admin/services');
+    })->name('admin.services');
+
+    Route::get('/admin/parameters', function () {
+        return Inertia::render('admin/parameters');
+    })->name('admin.parameters');
+
+    Route::get('/admin/session', function () {
+        return Inertia::render('admin/session');
+    })->name('admin.session');
+
+    Route::get('/admin/room', function () {
+        return Inertia::render('admin/room');
+    })->name('admin.room');
+
+    Route::get('/admin/patient', function () {
+        return Inertia::render('admin/patient');
+    })->name('admin.patient');
+
+    Route::get('/admin/agenda', function () {
+        return Inertia::render('admin/agenda');
+    })->name('admin.agenda');
+});
+===== 5. MIGRATIONS (liste) =====
+0001_01_01_000000_create_users_table.php
+0001_01_01_000001_create_cache_table.php
+0001_01_01_000002_create_jobs_table.php
+2026_01_30_084248_create_roles_table.php
+2026_01_30_084249_create_permissions_table.php
+2026_01_30_084250_create_services_table.php
+2026_01_30_084251_create_lits_table.php
+2026_01_30_084252_create_patients_table.php
+2026_01_30_084253_create_assurances_table.php
+2026_01_30_084254_create_admissions_table.php
+2026_01_30_084255_create_rendez_vouses_table.php
+2026_01_30_084256_create_consultations_table.php
+2026_01_30_084257_create_constante_vitales_table.php
+2026_01_30_084258_create_acte_medicals_table.php
+2026_01_30_084259_create_medicaments_table.php
+2026_01_30_084300_create_fournisseurs_table.php
+2026_01_30_084301_create_prescriptions_table.php
+2026_01_30_084302_create_ligne_prescriptions_table.php
+2026_01_30_084303_create_delivrances_table.php
+2026_01_30_084304_create_ligne_delivrances_table.php
+2026_01_30_084305_create_mouvement_stocks_table.php
+2026_01_30_084306_create_commande_fournisseurs_table.php
+2026_01_30_084307_create_ligne_commandes_table.php
+2026_01_30_084308_create_type_analyses_table.php
+2026_01_30_084309_create_analyse_laboratoires_table.php
+2026_01_30_084310_create_type_examen_imageries_table.php
+2026_01_30_084311_create_examen_imageries_table.php
+2026_01_30_084312_create_patient_hads_table.php
+2026_01_30_084313_create_tournees_table.php
+2026_01_30_084314_create_visite_hads_table.php
+2026_01_30_084315_create_factures_table.php
+2026_01_30_084316_create_ligne_factures_table.php
+2026_01_30_084317_create_paiements_table.php
+2026_01_30_084318_create_pointages_table.php
+2026_01_30_084319_create_demande_conges_table.php
+2026_01_30_084320_create_parametres_table.php
+2026_01_30_084321_create_audit_logs_table.php
+2026_01_30_084322_create_role_user_table.php
+2026_01_30_084323_create_permission_role_table.php
+2026_01_30_084324_create_categorie_medicaments_table.php
+2026_01_30_084325_create_type_examens_table.php
+2026_01_30_084326_create_modalite_imageries_table.php
+2026_01_30_084327_add_categorie_medicament_id_to_medicaments_table.php
+2026_01_30_084328_add_service_id_to_users_table.php
+2026_01_30_084329_add_modalite_imagerie_id_to_type_examens_table.php
+2026_01_30_084330_add_modalite_imagerie_id_to_examen_imageries_table.php
+2026_01_30_084332_update_lit_statut_enum.php
+2026_02_16_210319_create_dossiers_medicaux_table.php
+2026_02_16_211444_create_patient_dossiers_table.php
+2026_02_25_064435_create_occupation_rooms_table.php
+2026_02_25_065138_create_historique_lits_table.php
+2026_02_25_114013_create_pharmacie_anomalies_table.php
+2026_04_25_164518_create_personal_access_tokens_table.php
+2026_04_25_203000_create_alertes_table.php
+2026_04_25_204500_create_plannings_table.php
+2026_05_02_173000_create_conversations_table.php
+2026_05_02_173100_create_messages_table.php
+2026_05_02_173200_create_conversation_participants_table.php
+2026_05_02_174000_create_rapports_table.php
+
+===== 6. CONFIG (liste) =====
+app.php
+auth.php
+cache.php
+database.php
+filesystems.php
+inertia.php
+logging.php
+mail.php
+queue.php
+sanctum.php
+services.php
+session.php
+
+===== 7. COMPOSER.JSON (dépendances PHP) =====
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "laravel/blank-react-starter-kit",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "inertiajs/inertia-laravel": "^2.0",
+        "laravel/framework": "^12.0",
+        "laravel/sanctum": "*",
+        "laravel/tinker": "^2.10.1",
+        "laravel/wayfinder": "^0.1.11"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel-shift/blueprint": "*",
+        "laravel/boost": "^1.1",
+        "laravel/pail": "^1.2.2",
+        "laravel/pint": "^1.24",
+        "laravel/sail": "^1.41",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^11.5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm install",
+            "npm run build"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+        ],
+        "dev:ssr": [
+            "npm run build:ssr",
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan inertia:start-ssr\" --names=server,queue,logs,ssr --kill-others"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan boost:update --ansi"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
+
+===== 8. PACKAGE.JSON (dépendances JS si présent) =====
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "build:ssr": "vite build && vite build --ssr",
+        "dev": "vite",
+        "format": "prettier --write resources/",
+        "format:check": "prettier --check resources/",
+        "lint": "eslint . --fix",
+        "types": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.19.0",
+        "@laravel/vite-plugin-wayfinder": "^0.1.3",
+        "@types/node": "^22.13.5",
+        "babel-plugin-react-compiler": "^1.0.0",
+        "eslint": "^9.17.0",
+        "eslint-config-prettier": "^10.0.1",
+        "eslint-plugin-react": "^7.37.3",
+        "eslint-plugin-react-hooks": "^5.1.0",
+        "prettier": "^3.4.2",
+        "prettier-plugin-organize-imports": "^4.1.0",
+        "prettier-plugin-tailwindcss": "^0.6.11",
+        "typescript-eslint": "^8.23.0"
+    },
+    "dependencies": {
+        "@inertiajs/react": "^2.1.0",
+        "@tailwindcss/vite": "^4.1.11",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
+        "@vitejs/plugin-react": "^5.0.0",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "concurrently": "^9.0.1",
+        "globals": "^15.14.0",
+        "laravel-vite-plugin": "^2.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "tailwind-merge": "^3.0.1",
+        "tailwindcss": "^4.0.0",
+        "typescript": "^5.7.2",
+        "vite": "^7.0.4"
+    },
+    "optionalDependencies": {
+        "@rollup/rollup-linux-x64-gnu": "4.9.5",
+        "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
+        "lightningcss-linux-x64-gnu": "^1.29.1"
+    }
+}
+
+===== 9. .ENV.EXAMPLE (variables attendues) =====
+APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+# PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=sqlite
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=laravel
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+# CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME="${APP_NAME}"
+
+===== 10. STATISTIQUES =====
+Nb de migrations : 59
+Nb de modèles    : 50
+Nb de controllers: 44
+Nb de services   : 0
+Nb de jobs       : 0
+Nb de routes API : 60

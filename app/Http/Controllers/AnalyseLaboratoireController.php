@@ -11,7 +11,7 @@ use Illuminate\Http\Response;
 
 class AnalyseLaboratoireController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
         $analyseLaboratoires = AnalyseLaboratoire::all();
     }
