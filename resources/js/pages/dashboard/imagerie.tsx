@@ -2,678 +2,554 @@ import { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import DashboardLayout from './layout';
 
-// ─── Types ────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface ExamenImagerie {
-    id: number;
-    numero: string;
+    id: number; numero: string;
     patient: { id: number; nom: string; prenom: string; sexe: string };
-    type: string;
-    modalite: string;
-    modalite_id: number;
-    region_anatomique: string | null;
-    prescripteur: string;
-    service: string;
-    date_prescription: string;
-    date_examen: string | null;
-    salle: string | null;
-    priorite: string;
-    priorite_raw: string;
-    statut: string;
-    statut_raw: string;
-    technicien: string | null;
-    radiologue: string | null;
-    nb_images: number;
-    conclusion: string | null;
-    contre_indications: string[];
-    renseignements_cliniques: string | null;
+    type: string; modalite: string; modalite_id: number;
+    region_anatomique: string|null; prescripteur: string; service: string;
+    date_prescription: string; date_examen: string|null; salle: string|null;
+    priorite: string; priorite_raw: string; statut: string; statut_raw: string;
+    technicien: string|null; radiologue: string|null; nb_images: number;
+    conclusion: string|null; contre_indications: string[];
+    renseignements_cliniques: string|null;
 }
 interface Modalite   { id: number; nom: string; disponible: boolean }
 interface TypeExamen { id: number; nom: string; modalite_imagerie_id: number }
 interface Patient    { id: number; nom: string; prenom: string; sexe: string }
 interface Medecin    { id: number; name: string }
 interface Paginated<T> { data: T[]; total: number; last_page: number; links: any[] }
-
 interface Props {
-    examens:      Paginated<ExamenImagerie>;
-    stats:        { total: number; en_attente: number; planifies: number; realises: number; interpretes: number; urgents: number };
-    modalites:    Modalite[];
-    typesExamens: TypeExamen[];
-    patients:     Patient[];
-    medecins:     Medecin[];
-    filters:      { search?: string; statut?: string; priorite?: string; modalite_id?: string };
+    examens: Paginated<ExamenImagerie>;
+    stats: { total: number; en_attente: number; planifies: number; realises: number; interpretes: number; urgents: number };
+    modalites: Modalite[]; typesExamens: TypeExamen[]; patients: Patient[]; medecins: Medecin[];
+    filters: { search?: string; statut?: string; priorite?: string; modalite_id?: string };
 }
 
-// ─── Constantes ───────────────────────────────────────────────
-const MODALITE_STYLE: Record<string, { bg: string; icon: string }> = {
-    'Radiographie': { bg: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',           icon: '🩻' },
-    'Scanner':      { bg: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400', icon: '🔬' },
-    'IRM':          { bg: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400', icon: '🧲' },
-    'Échographie':  { bg: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',        icon: '📡' },
-    'Mammographie': { bg: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',        icon: '🎗️' },
-    'Panoramique':  { bg: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',    icon: '🦷' },
-    'TEP-Scan':     { bg: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',        icon: '⚛️' },
-};
-const DEFAULT_STYLE = { bg: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400', icon: '📷' };
+// ─── Config ───────────────────────────────────────────────────────────────────
 
-const STATUT_STYLE: Record<string, string> = {
-    'En attente': 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-    'Planifié':   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    'En cours':   'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    'Réalisé':    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    'Interprété': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+const MOD_CFG: Record<string, { color: string; bg: string; border: string; icon: string; grad: string }> = {
+    'Radiographie': { color:'#0284c7', bg:'#f0f9ff', border:'#bae6fd', icon:'🩻', grad:'linear-gradient(135deg,#0c4a6e,#0284c7)' },
+    'Scanner':      { color:'#4f46e5', bg:'#eef2ff', border:'#c7d2fe', icon:'🔬', grad:'linear-gradient(135deg,#312e81,#4f46e5)' },
+    'IRM':          { color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe', icon:'🧲', grad:'linear-gradient(135deg,#4c1d95,#7c3aed)' },
+    'Échographie':  { color:'#0d9488', bg:'#f0fdfa', border:'#99f6e4', icon:'📡', grad:'linear-gradient(135deg,#134e4a,#0d9488)' },
+    'Mammographie': { color:'#db2777', bg:'#fdf2f8', border:'#fbcfe8', icon:'🎗️', grad:'linear-gradient(135deg,#831843,#db2777)' },
+    'Panoramique':  { color:'#d97706', bg:'#fffbeb', border:'#fde68a', icon:'🦷', grad:'linear-gradient(135deg,#78350f,#d97706)' },
+    'TEP-Scan':     { color:'#dc2626', bg:'#fef2f2', border:'#fecaca', icon:'⚛️', grad:'linear-gradient(135deg,#7f1d1d,#dc2626)' },
 };
+const DEF_CFG = { color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb', icon:'📷', grad:'linear-gradient(135deg,#374151,#6b7280)' };
+const getM = (nom: string) => MOD_CFG[nom] ?? DEF_CFG;
 
-const CI_LABELS: Record<string, string> = {
-    allergie_iode:  'Allergie iode',
-    grossesse:      'Grossesse',
-    pacemaker:      'Pacemaker',
-    claustrophobie: 'Claustrophobie',
+const STATUT_CFG: Record<string, { color: string; bg: string; border: string }> = {
+    'En attente': { color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb' },
+    'Planifié':   { color:'#2563eb', bg:'#eff6ff', border:'#bfdbfe' },
+    'En cours':   { color:'#d97706', bg:'#fffbeb', border:'#fde68a' },
+    'Réalisé':    { color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' },
+    'Interprété': { color:'#16a34a', bg:'#f0fdf4', border:'#bbf7d0' },
 };
+const PRIO_CFG: Record<string, { color: string; bg: string; border: string }> = {
+    'Normal':      { color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb' },
+    'Urgent':      { color:'#d97706', bg:'#fffbeb', border:'#fde68a' },
+    'Très urgent': { color:'#dc2626', bg:'#fef2f2', border:'#fecaca' },
+};
+const CI_LABELS: Record<string, string> = { allergie_iode:'Allergie iode', grossesse:'Grossesse', pacemaker:'Pacemaker', claustrophobie:'Claustrophobie' };
+const STATUTS_WF = ['en_attente','planifie','en_cours','realise','interprete'] as const;
+const STATUTS_WF_LABELS: Record<string, string> = { en_attente:'En attente', planifie:'Planifié', en_cours:'En cours', realise:'Réalisé', interprete:'Interprété' };
 
-// ─── Badges ───────────────────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
+const iSx: React.CSSProperties = { width:'100%', height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', boxSizing:'border-box' };
+const fIn  = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f53003'; e.currentTarget.style.background='#fff'; };
+const fOut = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f0f0ee'; e.currentTarget.style.background='#fafaf9'; };
+
+function Badge({ label, cfg }: { label: string; cfg: { color: string; bg: string; border: string } }) {
+    return <span style={{ fontSize:11, fontWeight:700, color:cfg.color, background:cfg.bg, border:`1px solid ${cfg.border}`, borderRadius:100, padding:'3px 10px', whiteSpace:'nowrap', fontFamily:'system-ui,sans-serif' }}>{label}</span>;
+}
+function MBadge({ modalite }: { modalite: string }) {
+    const c = getM(modalite);
+    return <span style={{ fontSize:11, fontWeight:700, color:c.color, background:c.bg, border:`1px solid ${c.border}`, borderRadius:100, padding:'3px 10px', whiteSpace:'nowrap', fontFamily:'system-ui,sans-serif', display:'inline-flex', alignItems:'center', gap:5 }}>{c.icon} {modalite}</span>;
+}
+function SLabel({ label, color='#f53003' }: { label:string; color?:string }) {
+    return <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}><div style={{ width:3, height:13, borderRadius:100, background:color }}/><span style={{ fontSize:11, fontWeight:700, color:'#9ca3af', letterSpacing:'0.08em', textTransform:'uppercase', fontFamily:'system-ui,sans-serif' }}>{label}</span></div>;
+}
+function MModal({ children, onClose, maxW=680 }: { children: React.ReactNode; onClose:()=>void; maxW?: number }) {
     return (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STATUT_STYLE[status] ?? STATUT_STYLE['En attente']}`}>
-            {status}
-        </span>
+        <div style={{ position:'fixed', inset:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'rgba(10,10,8,0.6)', backdropFilter:'blur(10px)' }}>
+            <div style={{ width:'100%', maxWidth:maxW, borderRadius:24, background:'#fff', boxShadow:'0 32px 80px rgba(0,0,0,0.2)', maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+                {children}
+            </div>
+        </div>
+    );
+}
+function MHead({ title, sub, onClose, extra }: { title: React.ReactNode; sub?: React.ReactNode; onClose:()=>void; extra?: React.ReactNode }) {
+    return (
+        <div style={{ padding:'18px 22px 14px', borderBottom:'1px solid #f0f0ee', display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexShrink:0 }}>
+            <div>
+                <h2 style={{ fontSize:16, fontWeight:700, color:'#1a1a18', letterSpacing:'-0.3px' }}>{title}</h2>
+                {sub && <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>{sub}</p>}
+            </div>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                {extra}
+                <button onClick={onClose} style={{ width:30, height:30, borderRadius:8, border:'1px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
     );
 }
 
-function PrioriteBadge({ p }: { p: string }) {
-    const s: Record<string, string> = {
-        'Normal':      'bg-gray-100 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400',
-        'Urgent':      'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-        'Très urgent': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    };
-    return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${s[p] ?? s['Normal']}`}>{p}</span>;
-}
+// ─── Modal Nouvelle Demande ───────────────────────────────────────────────────
 
-function ModaliteBadge({ modalite }: { modalite: string }) {
-    const style = MODALITE_STYLE[modalite] ?? DEFAULT_STYLE;
-    return (
-        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${style.bg}`}>
-            {style.icon} {modalite}
-        </span>
-    );
-}
-
-// ─── Modal Nouvelle demande ────────────────────────────────────
-function NouvelleDemandeModal({ modalites, typesExamens, patients, medecins, onClose }: {
-    modalites:    Modalite[];
-    typesExamens: TypeExamen[];
-    patients:     Patient[];
-    medecins:     Medecin[];
-    onClose:      () => void;
-}) {
-    const [form, setForm] = useState({
-        patient_id:              '',
-        medecin_prescripteur_id: '',
-        type_examen_id:          '',
-        modalite_imagerie_id:    '',
-        region_anatomique:       '',
-        priorite:                'normal',
-        renseignements_cliniques:'',
-        contre_indications:      [] as string[],
-    });
+function NouvelleDemandeModal({ modalites, typesExamens, patients, medecins, onClose }: { modalites:Modalite[]; typesExamens:TypeExamen[]; patients:Patient[]; medecins:Medecin[]; onClose:()=>void }) {
+    const [form, setForm] = useState({ patient_id:'', medecin_prescripteur_id:'', type_examen_id:'', modalite_imagerie_id:'', region_anatomique:'', priorite:'normal', renseignements_cliniques:'', contre_indications:[] as string[] });
     const [saving, setSaving] = useState(false);
-
-    const safeModalites    = modalites    ?? [];
-    const safeTypesExamens = typesExamens ?? [];
-    const safePatients     = patients     ?? [];
-    const safeMedecins     = medecins     ?? [];
-
-    const filteredTypes = form.modalite_imagerie_id
-        ? safeTypesExamens.filter(t => t.modalite_imagerie_id === parseInt(form.modalite_imagerie_id))
-        : safeTypesExamens;
-
-    const toggleCI = (ci: string) =>
-        setForm(f => ({
-            ...f,
-            contre_indications: f.contre_indications.includes(ci)
-                ? f.contre_indications.filter(c => c !== ci)
-                : [...f.contre_indications, ci],
-        }));
-
-    const submit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setSaving(true);
-        router.post('/imagerie', form as any, {
-            onSuccess: onClose,
-            onFinish:  () => setSaving(false),
-        });
-    };
-
-    const inp = "w-full rounded-lg border border-[#e3e3e0] bg-white px-3 py-2.5 text-sm focus:border-[#f53003] focus:outline-none dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]";
+    const filteredTypes = form.modalite_imagerie_id ? typesExamens.filter(t=>t.modalite_imagerie_id===parseInt(form.modalite_imagerie_id)) : typesExamens;
+    const toggleCI = (ci: string) => setForm(f=>({ ...f, contre_indications: f.contre_indications.includes(ci)?f.contre_indications.filter(c=>c!==ci):[...f.contre_indications,ci] }));
+    const submit = (e: React.FormEvent) => { e.preventDefault(); setSaving(true); router.post('/imagerie', form as any, { onSuccess:onClose, onFinish:()=>setSaving(false) }); };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl dark:bg-[#161615]">
+        <MModal onClose={onClose} maxW={620}>
+            <MHead title="🩻 Nouvelle demande d'imagerie" sub="Prescription d'examen radiologique" onClose={onClose}/>
+            <form onSubmit={submit} style={{ overflowY:'auto', flex:1, padding:'18px 22px', display:'flex', flexDirection:'column', gap:18 }}>
 
-                {/* Header */}
-                <div className="sticky top-0 flex items-center justify-between border-b border-[#e3e3e0] bg-white px-6 py-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                    <div>
-                        <h2 className="text-lg font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Nouvelle demande d'imagerie</h2>
-                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Prescription d'examen radiologique</p>
-                    </div>
-                    <button onClick={onClose} className="rounded-lg p-2 text-[#706f6c] hover:bg-[#f5f5f3] dark:hover:bg-[#1C1C1A]">
-                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    </button>
+                <div>
+                    <SLabel label="Patient" color="#3b82f6"/>
+                    <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Patient *</label>
+                    <select value={form.patient_id} onChange={e=>setForm(f=>({...f,patient_id:e.target.value}))} required style={iSx} onFocus={fIn} onBlur={fOut}>
+                        <option value="">Sélectionner…</option>
+                        {patients.map(p=><option key={p.id} value={p.id}>{p.nom} {p.prenom}</option>)}
+                    </select>
                 </div>
 
-                <form onSubmit={submit} className="space-y-5 p-6">
-
-                    {/* Patient */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Patient *</label>
-                        <select value={form.patient_id} onChange={e => setForm({...form, patient_id: e.target.value})} className={inp} required>
-                            <option value="">Sélectionner...</option>
-                            {safePatients.map(p => <option key={p.id} value={p.id}>{p.nom} {p.prenom}</option>)}
-                        </select>
-                    </div>
-
-                    {/* Prescripteur + Priorité */}
-                    <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <SLabel label="Prescription" color="#7c3aed"/>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Prescripteur *</label>
-                            <select value={form.medecin_prescripteur_id} onChange={e => setForm({...form, medecin_prescripteur_id: e.target.value})} className={inp} required>
-                                <option value="">Sélectionner...</option>
-                                {safeMedecins.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Prescripteur *</label>
+                            <select value={form.medecin_prescripteur_id} onChange={e=>setForm(f=>({...f,medecin_prescripteur_id:e.target.value}))} required style={iSx} onFocus={fIn} onBlur={fOut}>
+                                <option value="">Sélectionner…</option>
+                                {medecins.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Priorité</label>
-                            <select value={form.priorite} onChange={e => setForm({...form, priorite: e.target.value})} className={inp}>
+                            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Priorité</label>
+                            <select value={form.priorite} onChange={e=>setForm(f=>({...f,priorite:e.target.value}))} style={iSx} onFocus={fIn} onBlur={fOut}>
                                 <option value="normal">Normal</option>
                                 <option value="urgent">Urgent</option>
                                 <option value="tres_urgent">Très urgent</option>
                             </select>
                         </div>
                     </div>
+                </div>
 
-                    {/* Modalité (boutons visuels) */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Modalité *</label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {safeModalites.map(m => {
-                                const style    = MODALITE_STYLE[m.nom] ?? DEFAULT_STYLE;
-                                const selected = form.modalite_imagerie_id === String(m.id);
-                                return (
-                                    <button key={m.id} type="button"
-                                        disabled={!m.disponible}
-                                        onClick={() => setForm({...form, modalite_imagerie_id: String(m.id), type_examen_id: ''})}
-                                        className={`flex items-center gap-2 rounded-lg border p-3 text-sm transition-all ${
-                                            !m.disponible
-                                                ? 'cursor-not-allowed border-red-200 bg-red-50 opacity-50 dark:border-red-900/30 dark:bg-red-900/10'
-                                                : selected
-                                                    ? `border-[#f53003] ${style.bg}`
-                                                    : 'border-[#e3e3e0] hover:border-[#f53003] dark:border-[#3E3E3A] dark:hover:border-[#f53003]'
-                                        }`}>
-                                        <span className="text-lg">{style.icon}</span>
-                                        <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{m.nom}</span>
-                                        {!m.disponible && <span className="ml-auto text-xs text-red-500">Indispo</span>}
-                                    </button>
-                                );
-                            })}
+                {/* Modalité en cards visuelles */}
+                <div>
+                    <SLabel label="Modalité *" color="#0284c7"/>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+                        {modalites.map(m=>{
+                            const mc = getM(m.nom);
+                            const active = form.modalite_imagerie_id===String(m.id);
+                            return (
+                                <button key={m.id} type="button" disabled={!m.disponible}
+                                    onClick={()=>setForm(f=>({...f,modalite_imagerie_id:String(m.id),type_examen_id:''}))}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:12, border:`1.5px solid ${active?mc.color:m.disponible?'#f0f0ee':'#fecaca'}`, background:active?mc.bg:m.disponible?'#fafaf9':'#fef2f2', cursor:m.disponible?'pointer':'not-allowed', transition:'all 0.15s', opacity:m.disponible?1:0.6 }}>
+                                    <span style={{ fontSize:18 }}>{mc.icon}</span>
+                                    <div style={{ textAlign:'left', minWidth:0 }}>
+                                        <p style={{ fontSize:12, fontWeight:700, color:active?mc.color:'#374151', fontFamily:'system-ui,sans-serif' }}>{m.nom}</p>
+                                        {!m.disponible && <p style={{ fontSize:10, color:'#dc2626', fontFamily:'system-ui,sans-serif' }}>Indisponible</p>}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div>
+                    <SLabel label="Examen" color="#059669"/>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                        <div>
+                            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Type d'examen *</label>
+                            <select value={form.type_examen_id} onChange={e=>setForm(f=>({...f,type_examen_id:e.target.value}))} required style={iSx} onFocus={fIn} onBlur={fOut}>
+                                <option value="">{form.modalite_imagerie_id?'Sélectionner…':'Choisir une modalité d\'abord…'}</option>
+                                {filteredTypes.map(t=><option key={t.id} value={t.id}>{t.nom}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Région anatomique</label>
+                            <select value={form.region_anatomique} onChange={e=>setForm(f=>({...f,region_anatomique:e.target.value}))} style={iSx} onFocus={fIn} onBlur={fOut}>
+                                <option value="">Sélectionner…</option>
+                                {['Crâne / Encéphale','Thorax','Abdomen / Pelvis','Rachis','Membre supérieur','Membre inférieur','Cœur','Seins','Autres'].map(r=><option key={r}>{r}</option>)}
+                            </select>
                         </div>
                     </div>
+                </div>
 
-                    {/* Type d'examen */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Type d'examen *</label>
-                        <select value={form.type_examen_id} onChange={e => setForm({...form, type_examen_id: e.target.value})} className={inp} required>
-                            <option value="">
-                                {form.modalite_imagerie_id ? 'Sélectionner...' : 'Choisir une modalité d\'abord…'}
-                            </option>
-                            {filteredTypes.map(t => <option key={t.id} value={t.id}>{t.nom}</option>)}
-                        </select>
-                    </div>
+                <div>
+                    <SLabel label="Renseignements cliniques" color="#6b7280"/>
+                    <textarea rows={3} value={form.renseignements_cliniques} onChange={e=>setForm(f=>({...f,renseignements_cliniques:e.target.value}))} placeholder="Contexte, antécédents, hypothèse diagnostique…"
+                        style={{ ...iSx, height:'auto', padding:'8px 12px', resize:'vertical' }} onFocus={fIn} onBlur={fOut}/>
+                </div>
 
-                    {/* Région anatomique */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Région anatomique</label>
-                        <select value={form.region_anatomique} onChange={e => setForm({...form, region_anatomique: e.target.value})} className={inp}>
-                            <option value="">Sélectionner...</option>
-                            {['Crâne / Encéphale', 'Thorax', 'Abdomen / Pelvis', 'Rachis', 'Membre supérieur', 'Membre inférieur', 'Cœur', 'Seins', 'Autres'].map(r => (
-                                <option key={r}>{r}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Renseignements cliniques */}
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Renseignements cliniques</label>
-                        <textarea rows={3} value={form.renseignements_cliniques}
-                            onChange={e => setForm({...form, renseignements_cliniques: e.target.value})}
-                            placeholder="Contexte, antécédents, hypothèse diagnostique..."
-                            className={inp} />
-                    </div>
-
-                    {/* Contre-indications */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Contre-indications / Allergies</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(CI_LABELS).map(([ci, label]) => (
-                                <label key={ci} className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 transition-colors ${
-                                    form.contre_indications.includes(ci)
-                                        ? 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20'
-                                        : 'border-[#e3e3e0] hover:bg-[#f5f5f3] dark:border-[#3E3E3A]'
-                                }`}>
-                                    <input type="checkbox" checked={form.contre_indications.includes(ci)}
-                                        onChange={() => toggleCI(ci)}
-                                        className="h-4 w-4 rounded text-red-500 focus:ring-red-500" />
-                                    <span className="text-sm text-[#1b1b18] dark:text-[#EDEDEC]">{label}</span>
+                <div>
+                    <SLabel label="Contre-indications / Allergies" color="#dc2626"/>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                        {Object.entries(CI_LABELS).map(([ci,label])=>{
+                            const active = form.contre_indications.includes(ci);
+                            return (
+                                <label key={ci} onClick={()=>toggleCI(ci)}
+                                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, border:`1.5px solid ${active?'#dc2626':'#f0f0ee'}`, background:active?'#fef2f2':'#fafaf9', cursor:'pointer', transition:'all 0.15s' }}>
+                                    <div style={{ width:16, height:16, borderRadius:4, border:`2px solid ${active?'#dc2626':'#d1d5db'}`, background:active?'#dc2626':'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                        {active && <svg style={{width:10,height:10,color:'#fff'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
+                                    </div>
+                                    <span style={{ fontSize:12, fontWeight:600, color:active?'#dc2626':'#374151', fontFamily:'system-ui,sans-serif' }}>{label}</span>
                                 </label>
-                            ))}
-                        </div>
+                            );
+                        })}
                     </div>
+                </div>
 
-                    <div className="flex justify-end gap-3 border-t border-[#e3e3e0] pt-4 dark:border-[#3E3E3A]">
-                        <button type="button" onClick={onClose}
-                            className="rounded-lg border border-[#e3e3e0] px-4 py-2 text-sm text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC]">
-                            Annuler
-                        </button>
-                        <button type="submit" disabled={saving}
-                            className="flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2 text-sm font-medium text-white hover:bg-[#d42a03] disabled:opacity-60">
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            {saving ? 'Envoi...' : 'Envoyer la demande'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div style={{ display:'flex', justifyContent:'flex-end', gap:10, paddingTop:8, borderTop:'1px solid #f0f0ee' }}>
+                    <button type="button" onClick={onClose} style={{ height:36, padding:'0 16px', borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fff', fontSize:13, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Annuler</button>
+                    <button type="submit" disabled={saving}
+                        style={{ height:36, padding:'0 18px', borderRadius:9, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', opacity:saving?0.7:1, boxShadow:'0 4px 14px rgba(245,48,3,0.25)', display:'flex', alignItems:'center', gap:7 }}>
+                        ✓ {saving ? 'Envoi…' : 'Envoyer la demande'}
+                    </button>
+                </div>
+            </form>
+        </MModal>
     );
 }
 
-// ─── Modal Détails / Compte-rendu ─────────────────────────────
-function DetailModal({ examen, medecins, onClose }: {
-    examen:   ExamenImagerie;
-    medecins: Medecin[];
-    onClose:  () => void;
-}) {
-    const [conclusion,   setConclusion]   = useState(examen.conclusion ?? '');
-    const [radiologueId, setRadiologueId] = useState('');
-    const [saving,       setSaving]       = useState(false);
+// ─── Modal Détail / Compte-rendu ──────────────────────────────────────────────
 
-    const saveConclusion = () => {
-        setSaving(true);
-        router.patch(`/imagerie/${examen.id}/conclusion`, { conclusion, radiologue_id: radiologueId || null }, {
-            onSuccess: onClose,
-            onFinish:  () => setSaving(false),
-        });
-    };
+function DetailModal({ examen, medecins, onClose }: { examen: ExamenImagerie; medecins: Medecin[]; onClose:()=>void }) {
+    const [conclusion,  setConclusion]  = useState(examen.conclusion ?? '');
+    const [radioId,     setRadioId]     = useState('');
+    const [saving,      setSaving]      = useState(false);
+    const mc = getM(examen.modalite);
+    const statCfg  = STATUT_CFG[examen.statut] ?? STATUT_CFG['En attente'];
+    const prioCfg  = PRIO_CFG[examen.priorite] ?? PRIO_CFG['Normal'];
+    const currIdx  = STATUTS_WF.indexOf(examen.statut_raw as any);
 
-    const changeStatut = (s: string) =>
-        router.patch(`/imagerie/${examen.id}/statut`, { statut: s }, { onSuccess: onClose });
-
-    const nextStatut = (): { value: string; label: string } | null => {
-        const map: Record<string, { value: string; label: string }> = {
-            'en_attente': { value: 'planifie', label: '→ Planifier' },
-            'planifie':   { value: 'en_cours', label: '→ Démarrer' },
-            'en_cours':   { value: 'realise',  label: '→ Marquer réalisé' },
-        };
-        return map[examen.statut_raw] ?? null;
-    };
-
-    const safeMedecins = medecins ?? [];
+    const saveConclusion = () => { setSaving(true); router.patch(`/imagerie/${examen.id}/conclusion`,{conclusion,radiologue_id:radioId||null},{onSuccess:onClose,onFinish:()=>setSaving(false)}); };
+    const changeStatut   = (s: string) => router.patch(`/imagerie/${examen.id}/statut`,{statut:s},{onSuccess:onClose});
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white shadow-2xl dark:bg-[#161615]">
-
-                {/* Header */}
-                <div className="sticky top-0 flex items-center justify-between border-b border-[#e3e3e0] bg-white px-6 py-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-lg font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{examen.type}</h2>
-                            <StatusBadge status={examen.statut} />
-                            <PrioriteBadge p={examen.priorite} />
-                        </div>
-                        <p className="font-mono text-sm text-[#f53003]">{examen.numero}</p>
+        <MModal onClose={onClose} maxW={820}>
+            {/* Header teinté modalité */}
+            <div style={{ padding:'20px 22px 16px', background:`linear-gradient(135deg,${mc.bg},#fff)`, borderBottom:'1px solid #f0f0ee', display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexShrink:0 }}>
+                <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                        <span style={{ fontSize:22 }}>{mc.icon}</span>
+                        <h2 style={{ fontSize:17, fontWeight:800, color:'#1a1a18', letterSpacing:'-0.3px' }}>{examen.type}</h2>
+                        <Badge label={examen.statut} cfg={statCfg}/>
+                        <Badge label={examen.priorite} cfg={prioCfg}/>
                     </div>
-                    <button onClick={onClose} className="rounded-lg p-2 text-[#706f6c] hover:bg-[#f5f5f3] dark:hover:bg-[#1C1C1A]">
-                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    </button>
+                    <p style={{ fontFamily:'monospace', fontSize:12, color:'#f53003', fontWeight:700 }}>{examen.numero}</p>
                 </div>
+                <button onClick={onClose} style={{ width:30, height:30, borderRadius:8, border:'1px solid #f0f0ee', background:'rgba(255,255,255,0.8)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
 
-                <div className="p-6 space-y-6">
+            <div style={{ overflowY:'auto', flex:1, padding:'18px 22px', display:'flex', flexDirection:'column', gap:18 }}>
 
-                    {/* Patient */}
-                    <div className="flex items-center gap-4 rounded-lg bg-[#f5f5f3] p-4 dark:bg-[#1C1C1A]">
-                        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-xl font-semibold ${examen.patient.sexe === 'M' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
+                {/* Patient */}
+                <div style={{ borderRadius:14, background:'#fafaf9', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, flexWrap:'wrap' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <div style={{ width:44, height:44, borderRadius:12, background:examen.patient.sexe==='M'?'linear-gradient(135deg,#3b82f6,#2563eb)':'linear-gradient(135deg,#ec4899,#db2777)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:'#fff', flexShrink:0 }}>
                             {examen.patient.prenom[0]}{examen.patient.nom[0]}
                         </div>
-                        <div className="flex-1">
-                            <p className="text-lg font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{examen.patient.prenom} {examen.patient.nom}</p>
-                            <ModaliteBadge modalite={examen.modalite} />
-                        </div>
-                        <div className="text-right text-sm text-[#706f6c]">
-                            <p>Prescripteur : <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{examen.prescripteur}</span></p>
-                            <p>{examen.service}</p>
+                        <div>
+                            <p style={{ fontSize:15, fontWeight:700, color:'#1a1a18' }}>{examen.patient.prenom} {examen.patient.nom}</p>
+                            <div style={{ marginTop:4 }}><MBadge modalite={examen.modalite}/></div>
                         </div>
                     </div>
-
-                    {/* Infos */}
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                        {[
-                            { label: 'Modalité', value: examen.modalite },
-                            { label: 'Région',   value: examen.region_anatomique ?? '—' },
-                            { label: 'Demande',  value: examen.date_prescription },
-                            { label: 'Examen',   value: examen.date_examen ?? '—' },
-                        ].map(c => (
-                            <div key={c.label} className="rounded-lg border border-[#e3e3e0] p-3 dark:border-[#3E3E3A]">
-                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{c.label}</p>
-                                <p className="mt-1 font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{c.value}</p>
-                            </div>
-                        ))}
+                    <div style={{ textAlign:'right' }}>
+                        <p style={{ fontSize:13, color:'#374151' }}>Dr. {examen.prescripteur}</p>
+                        <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>{examen.service}</p>
                     </div>
-
-                    {/* Contre-indications */}
-                    {examen.contre_indications?.length > 0 && (
-                        <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10">
-                            <p className="mb-2 text-sm font-medium text-red-700 dark:text-red-400">⚠️ Contre-indications signalées</p>
-                            <div className="flex flex-wrap gap-2">
-                                {examen.contre_indications.map(ci => (
-                                    <span key={ci} className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                                        {CI_LABELS[ci] ?? ci}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Renseignements cliniques */}
-                    {examen.renseignements_cliniques && (
-                        <div className="rounded-lg border border-[#e3e3e0] p-4 dark:border-[#3E3E3A]">
-                            <p className="mb-1 text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">Renseignements cliniques</p>
-                            <p className="text-sm text-[#1b1b18] dark:text-[#EDEDEC]">{examen.renseignements_cliniques}</p>
-                        </div>
-                    )}
-
-                    {/* Avancement statut */}
-                    {!['interprete'].includes(examen.statut_raw) && (
-                        <div>
-                            <p className="mb-2 text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Avancement</p>
-                            <div className="flex items-center gap-2">
-                                {(['en_attente', 'planifie', 'en_cours', 'realise', 'interprete'] as const).map((s, i) => {
-                                    const labels: Record<string, string> = { en_attente: 'En attente', planifie: 'Planifié', en_cours: 'En cours', realise: 'Réalisé', interprete: 'Interprété' };
-                                    const currentIdx = ['en_attente', 'planifie', 'en_cours', 'realise', 'interprete'].indexOf(examen.statut_raw);
-                                    return (
-                                        <button key={s} onClick={() => changeStatut(s)}
-                                            className={`flex-1 rounded-lg py-2 text-xs font-medium transition-all ${
-                                                i === currentIdx ? 'bg-[#f53003] text-white' :
-                                                i < currentIdx  ? 'bg-green-500 text-white' :
-                                                'bg-[#f5f5f3] text-[#706f6c] hover:bg-[#e3e3e0] dark:bg-[#1C1C1A] dark:text-[#A1A09A]'
-                                            }`}>
-                                            {labels[s]}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Compte-rendu existant */}
-                    {examen.conclusion && (
-                        <div>
-                            <h4 className="mb-3 text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Compte-rendu</h4>
-                            <div className="rounded-lg border border-[#e3e3e0] bg-[#fafaf9] p-4 dark:border-[#3E3E3A] dark:bg-[#0a0a0a]">
-                                <p className="text-sm leading-relaxed text-[#1b1b18] dark:text-[#EDEDEC]">{examen.conclusion}</p>
-                                {examen.radiologue && (
-                                    <p className="mt-3 border-t border-[#e3e3e0] pt-2 text-xs text-[#706f6c] dark:border-[#3E3E3A]">
-                                        Validé par {examen.radiologue} · {examen.date_examen}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Saisie compte-rendu */}
-                    {examen.statut_raw === 'realise' && !examen.conclusion && (
-                        <div>
-                            <h4 className="mb-3 text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Saisir le compte-rendu</h4>
-                            <div className="space-y-3">
-                                <select value={radiologueId} onChange={e => setRadiologueId(e.target.value)}
-                                    className="w-full rounded-lg border border-[#e3e3e0] bg-white px-3 py-2.5 text-sm dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
-                                    <option value="">Radiologue signataire (optionnel)...</option>
-                                    {safeMedecins.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                </select>
-                                <textarea rows={5} value={conclusion}
-                                    onChange={e => setConclusion(e.target.value)}
-                                    placeholder="Rédigez votre compte-rendu radiologique..."
-                                    className="w-full rounded-lg border border-[#e3e3e0] bg-white px-3 py-2.5 text-sm dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]" />
-                            </div>
-                        </div>
-                    )}
                 </div>
 
-                {/* Footer */}
-                <div className="sticky bottom-0 flex items-center justify-between border-t border-[#e3e3e0] bg-[#fafaf9] px-6 py-4 dark:border-[#3E3E3A] dark:bg-[#0a0a0a]">
-                    <button className="flex items-center gap-1 rounded-lg border border-[#e3e3e0] px-3 py-2 text-sm text-[#706f6c] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#A1A09A]">
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M6 9V2H18V9M6 18H4C2.9 18 2 17.1 2 16V11C2 9.9 2.9 9 4 9H20C21.1 9 22 9.9 22 11V16C22 17.1 21.1 18 20 18H18M18 14H6V22H18V14Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                        Imprimer
-                    </button>
-                    <div className="flex gap-2">
-                        <button onClick={onClose}
-                            className="rounded-lg border border-[#e3e3e0] px-4 py-2 text-sm text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC]">
-                            Fermer
-                        </button>
-                        {examen.statut_raw === 'realise' && !examen.conclusion && (
-                            <button onClick={saveConclusion} disabled={saving || !conclusion.trim()}
-                                className="flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2 text-sm font-medium text-white hover:bg-[#d42a03] disabled:opacity-60">
-                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                {saving ? 'Validation...' : 'Valider le compte-rendu'}
-                            </button>
-                        )}
+                {/* Infos grid */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+                    {[['Modalité',examen.modalite],['Région',examen.region_anatomique??'—'],['Demande',examen.date_prescription],['Examen',examen.date_examen??'—']].map(([l,v])=>(
+                        <div key={l} style={{ borderRadius:10, background:'#fafaf9', border:'1px solid #f0f0ee', padding:'10px 12px' }}>
+                            <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginBottom:4 }}>{l}</p>
+                            <p style={{ fontSize:13, fontWeight:600, color:'#1a1a18' }}>{v}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Contre-indications */}
+                {examen.contre_indications?.length > 0 && (
+                    <div style={{ borderRadius:12, background:'#fef2f2', border:'1px solid #fecaca', padding:'12px 16px' }}>
+                        <p style={{ fontSize:12, fontWeight:700, color:'#dc2626', fontFamily:'system-ui,sans-serif', marginBottom:8 }}>⚠️ Contre-indications signalées</p>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                            {examen.contre_indications.map(ci=>(
+                                <span key={ci} style={{ fontSize:11, fontWeight:700, color:'#dc2626', background:'#fff', border:'1px solid #fca5a5', borderRadius:100, padding:'2px 10px' }}>
+                                    {CI_LABELS[ci]??ci}
+                                </span>
+                            ))}
+                        </div>
                     </div>
+                )}
+
+                {/* Renseignements */}
+                {examen.renseignements_cliniques && (
+                    <div style={{ borderRadius:12, background:'#fafaf9', border:'1px solid #f0f0ee', padding:'12px 16px' }}>
+                        <p style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Renseignements cliniques</p>
+                        <p style={{ fontSize:13, color:'#1a1a18', lineHeight:1.6 }}>{examen.renseignements_cliniques}</p>
+                    </div>
+                )}
+
+                {/* Avancement */}
+                {examen.statut_raw !== 'interprete' && (
+                    <div>
+                        <SLabel label="Avancement"/>
+                        <div style={{ display:'flex', gap:5 }}>
+                            {STATUTS_WF.map((s,i)=>(
+                                <button key={s} onClick={()=>changeStatut(s)}
+                                    style={{ flex:1, height:34, borderRadius:9, border:'none', cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'system-ui,sans-serif', background:i===currIdx?'#f53003':i<currIdx?'#10b981':'#f5f5f3', color:i===currIdx||i<currIdx?'#fff':'#9ca3af', transition:'all 0.15s' }}>
+                                    {STATUTS_WF_LABELS[s]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Compte-rendu existant */}
+                {examen.conclusion && (
+                    <div>
+                        <SLabel label="Compte-rendu" color="#16a34a"/>
+                        <div style={{ borderRadius:12, background:'#f0fdf4', border:'1px solid #bbf7d0', padding:'14px 16px' }}>
+                            <p style={{ fontSize:13, color:'#1a1a18', lineHeight:1.7 }}>{examen.conclusion}</p>
+                            {examen.radiologue && (
+                                <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:8, paddingTop:8, borderTop:'1px solid #bbf7d0' }}>
+                                    Validé par {examen.radiologue} · {examen.date_examen}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Saisie compte-rendu */}
+                {examen.statut_raw==='realise' && !examen.conclusion && (
+                    <div>
+                        <SLabel label="Saisir le compte-rendu" color="#f53003"/>
+                        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                            <select value={radioId} onChange={e=>setRadioId(e.target.value)} style={iSx} onFocus={fIn} onBlur={fOut}>
+                                <option value="">Radiologue signataire (optionnel)…</option>
+                                {medecins.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                            <textarea rows={5} value={conclusion} onChange={e=>setConclusion(e.target.value)} placeholder="Rédigez votre compte-rendu radiologique…"
+                                style={{ ...iSx, height:'auto', padding:'10px 12px', resize:'vertical' }} onFocus={fIn} onBlur={fOut}/>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div style={{ padding:'12px 22px', borderTop:'1px solid #f0f0ee', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+                <button onClick={()=>window.print()} style={{ height:34, padding:'0 14px', borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:12, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif', display:'flex', alignItems:'center', gap:6 }}>
+                    <svg style={{width:13,height:13}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm1-11V4a2 2 0 00-2-2H9a2 2 0 00-2 2v3"/></svg>
+                    Imprimer
+                </button>
+                <div style={{ display:'flex', gap:10 }}>
+                    <button onClick={onClose} style={{ height:34, padding:'0 14px', borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fff', fontSize:13, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Fermer</button>
+                    {examen.statut_raw==='realise' && !examen.conclusion && (
+                        <button onClick={saveConclusion} disabled={saving||!conclusion.trim()}
+                            style={{ height:34, padding:'0 16px', borderRadius:9, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', opacity:(saving||!conclusion.trim())?0.5:1, boxShadow:'0 4px 14px rgba(245,48,3,0.25)', display:'flex', alignItems:'center', gap:7 }}>
+                            ✓ {saving ? 'Validation…' : 'Valider le compte-rendu'}
+                        </button>
+                    )}
                 </div>
             </div>
-        </div>
+        </MModal>
     );
 }
 
-// ─── Page principale ──────────────────────────────────────────
+// ─── Page principale ──────────────────────────────────────────────────────────
+
 export default function Imagerie({ examens, stats, modalites, typesExamens, patients, medecins, filters }: Props) {
     const { flash }: any = usePage().props;
     const [showNew,  setShowNew]  = useState(false);
-    const [selected, setSelected] = useState<ExamenImagerie | null>(null);
+    const [selected, setSelected] = useState<ExamenImagerie|null>(null);
     const [search,   setSearch]   = useState(filters.search      ?? '');
     const [statut,   setStatut]   = useState(filters.statut      ?? '');
     const [priorite, setPriorite] = useState(filters.priorite    ?? '');
     const [modalite, setModalite] = useState(filters.modalite_id ?? '');
 
-    const safeModalites = modalites ?? [];
-
-    const applyFilters = (ov: object = {}) =>
-        router.get('/imagerie', { search, statut, priorite, modalite_id: modalite, ...ov }, { preserveState: true, replace: true });
-
-    const handleDelete = (e: ExamenImagerie) => {
-        if (confirm(`Supprimer "${e.numero}" ?`)) router.delete(`/imagerie/${e.id}`);
-    };
+    const apply = (ov: object = {}) => router.get('/imagerie', { search, statut, priorite, modalite_id:modalite, ...ov }, { preserveState:true, replace:true });
+    const del   = (e: ExamenImagerie) => { if (confirm(`Supprimer "${e.numero}" ?`)) router.delete(`/imagerie/${e.id}`); };
 
     return (
         <DashboardLayout title="Imagerie médicale" subtitle="Radiologie et examens d'imagerie">
+
             {flash?.success && (
-                <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">{flash.success}</div>
+                <div style={{ marginBottom:16, padding:'12px 16px', borderRadius:14, background:'#f0fdf4', border:'1px solid #bbf7d0', fontSize:13, color:'#16a34a', fontFamily:'system-ui,sans-serif', display:'flex', gap:8, alignItems:'center' }}>✅ {flash.success}</div>
             )}
 
-            {/* Stats */}
-            <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {/* ══════════════════════════════════════ KPI */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:12, marginBottom:24 }}>
                 {[
-                    { label: 'Total',       value: stats.total,       color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-50 dark:bg-blue-900/20',    icon: '📷' },
-                    { label: 'En attente',  value: stats.en_attente,  color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', icon: '⏳' },
-                    { label: 'Planifiés',   value: stats.planifies,   color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', icon: '📅' },
-                    { label: 'Réalisés',    value: stats.realises,    color: 'text-teal-600 dark:text-teal-400',    bg: 'bg-teal-50 dark:bg-teal-900/20',    icon: '✔️' },
-                    { label: 'Interprétés', value: stats.interpretes, color: 'text-green-600 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-900/20',  icon: '📋' },
-                    { label: 'Urgents',     value: stats.urgents,     color: 'text-red-600 dark:text-red-400',      bg: 'bg-red-50 dark:bg-red-900/20',      icon: '⚡' },
-                ].map(s => (
-                    <div key={s.label} className="rounded-xl border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                        <div className={`mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg text-lg ${s.bg}`}>{s.icon}</div>
-                        <p className={`text-2xl font-semibold ${s.color}`}>{s.value}</p>
-                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{s.label}</p>
+                    { label:'Total',       value:stats.total,       icon:'📷', grad:'linear-gradient(135deg,#1a1a18,#2d2d2a)', shadow:'rgba(0,0,0,0.25)' },
+                    { label:'En attente',  value:stats.en_attente,  icon:'⏳', grad:'linear-gradient(135deg,#374151,#6b7280)', shadow:'rgba(107,114,128,0.2)' },
+                    { label:'Planifiés',   value:stats.planifies,   icon:'📅', grad:'linear-gradient(135deg,#1e3a8a,#2563eb)', shadow:'rgba(37,99,235,0.35)' },
+                    { label:'Réalisés',    value:stats.realises,    icon:'✔️', grad:'linear-gradient(135deg,#4c1d95,#7c3aed)', shadow:'rgba(124,58,237,0.35)' },
+                    { label:'Interprétés', value:stats.interpretes, icon:'📋', grad:'linear-gradient(135deg,#065f46,#10b981)', shadow:'rgba(16,185,129,0.35)' },
+                    { label:'Urgents',     value:stats.urgents,     icon:'⚡', grad:'linear-gradient(135deg,#991b1b,#ef4444)', shadow:'rgba(239,68,68,0.35)' },
+                ].map((k,i)=>(
+                    <div key={i} style={{ borderRadius:16, padding:'16px', background:k.grad, color:'#fff', position:'relative', overflow:'hidden', boxShadow:`0 6px 20px ${k.shadow}` }}>
+                        <div style={{ position:'absolute', top:-10, right:-10, width:55, height:55, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }}/>
+                        <div style={{ fontSize:20, marginBottom:6 }}>{k.icon}</div>
+                        <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-0.5px', lineHeight:1 }}>{k.value}</div>
+                        <div style={{ fontSize:10, fontWeight:500, opacity:0.8, marginTop:3, fontFamily:'system-ui,sans-serif' }}>{k.label}</div>
                     </div>
                 ))}
             </div>
 
-            {/* Cartes modalités */}
-            <div className="mb-6">
-                <h3 className="mb-3 text-sm font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Modalités d'imagerie</h3>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                    {safeModalites.map(m => {
-                        const style = MODALITE_STYLE[m.nom] ?? DEFAULT_STYLE;
+            {/* ══════════════════════════════════════ CARTES MODALITÉS */}
+            <div style={{ marginBottom:20 }}>
+                <p style={{ fontSize:13, fontWeight:700, color:'#374151', marginBottom:10, fontFamily:'system-ui,sans-serif' }}>Modalités disponibles</p>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:10 }}>
+                    {(modalites??[]).map(m=>{
+                        const mc = getM(m.nom);
                         return (
-                            <div key={m.id} className={`rounded-xl border p-4 ${m.disponible ? 'border-[#e3e3e0] bg-white dark:border-[#3E3E3A] dark:bg-[#161615]' : 'border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/10'}`}>
-                                <div className="mb-1 text-2xl">{style.icon}</div>
-                                <p className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{m.nom}</p>
-                                <p className={`text-xs ${m.disponible ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {m.disponible ? 'Disponible' : 'Maintenance'}
-                                </p>
+                            <div key={m.id} style={{ borderRadius:14, overflow:'hidden', border:`1px solid ${m.disponible?mc.border:'#fecaca'}`, background:'#fff', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+                                <div style={{ height:3, background:m.disponible?mc.grad:'linear-gradient(135deg,#dc2626,#ef4444)' }}/>
+                                <div style={{ padding:'12px 12px 10px', textAlign:'center' }}>
+                                    <div style={{ fontSize:22, marginBottom:6 }}>{mc.icon}</div>
+                                    <p style={{ fontSize:12, fontWeight:700, color:'#1a1a18', fontFamily:'system-ui,sans-serif' }}>{m.nom}</p>
+                                    <p style={{ fontSize:10, color:m.disponible?mc.color:'#dc2626', fontFamily:'system-ui,sans-serif', marginTop:3, fontWeight:600 }}>
+                                        {m.disponible ? '● Dispo' : '● Maintenance'}
+                                    </p>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             </div>
 
-            {/* Toolbar */}
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-                <div className="relative min-w-[180px] flex-1">
-                    <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#706f6c]" viewBox="0 0 24 24" fill="none">
-                        <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5"/>
-                        <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                    <input type="text" placeholder="N° examen ou patient..." value={search}
-                        onChange={e => { setSearch(e.target.value); applyFilters({ search: e.target.value }); }}
-                        className="w-full rounded-lg border border-[#e3e3e0] bg-white py-2 pl-9 pr-4 text-sm focus:border-[#f53003] focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]" />
+            {/* ══════════════════════════════════════ TOOLBAR */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:18, flexWrap:'wrap' }}>
+                <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+                    <div style={{ position:'relative' }}>
+                        <svg style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', width:13, height:13, color:'#c0c0bc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" value={search} onChange={e=>{ setSearch(e.target.value); apply({search:e.target.value}); }} placeholder="N° examen, patient…"
+                            style={{ height:38, paddingLeft:30, paddingRight:12, borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', width:220 }}
+                            onFocus={fIn} onBlur={fOut}/>
+                    </div>
+                    {[
+                        { val:modalite, set:setModalite, key:'modalite_id', opts:[['','Toutes modalités'],...(modalites??[]).map(m=>[String(m.id),m.nom])] },
+                        { val:statut,   set:setStatut,   key:'statut',      opts:[['','Tous statuts'],['en_attente','En attente'],['planifie','Planifié'],['en_cours','En cours'],['realise','Réalisé'],['interprete','Interprété']] },
+                        { val:priorite, set:setPriorite, key:'priorite',    opts:[['','Toutes priorités'],['normal','Normal'],['urgent','Urgent'],['tres_urgent','Très urgent']] },
+                    ].map((f,i)=>(
+                        <select key={i} value={f.val} onChange={e=>{ f.set(e.target.value); apply({[f.key]:e.target.value}); }}
+                            style={{ height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', cursor:'pointer' }}>
+                            {f.opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                        </select>
+                    ))}
                 </div>
-
-                <select value={modalite} onChange={e => { setModalite(e.target.value); applyFilters({ modalite_id: e.target.value }); }}
-                    className="rounded-lg border border-[#e3e3e0] bg-white px-3 py-2 text-sm focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-                    <option value="">Toutes modalités</option>
-                    {safeModalites.map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
-                </select>
-
-                <select value={statut} onChange={e => { setStatut(e.target.value); applyFilters({ statut: e.target.value }); }}
-                    className="rounded-lg border border-[#e3e3e0] bg-white px-3 py-2 text-sm focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-                    <option value="">Tous statuts</option>
-                    <option value="en_attente">En attente</option>
-                    <option value="planifie">Planifié</option>
-                    <option value="en_cours">En cours</option>
-                    <option value="realise">Réalisé</option>
-                    <option value="interprete">Interprété</option>
-                </select>
-
-                <select value={priorite} onChange={e => { setPriorite(e.target.value); applyFilters({ priorite: e.target.value }); }}
-                    className="rounded-lg border border-[#e3e3e0] bg-white px-3 py-2 text-sm focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-                    <option value="">Toutes priorités</option>
-                    <option value="normal">Normal</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="tres_urgent">Très urgent</option>
-                </select>
-
-                <button onClick={() => setShowNew(true)}
-                    className="flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03]">
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                <button onClick={()=>setShowNew(true)}
+                    style={{ display:'flex', alignItems:'center', gap:7, height:38, padding:'0 16px', borderRadius:10, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(245,48,3,0.3)', transition:'transform 0.15s' }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform='translateY(-1px)'}
+                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform='none'}>
+                    <svg style={{width:14,height:14}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v14M5 12h14"/></svg>
                     Nouvelle demande
                 </button>
             </div>
 
-            {/* Tableau */}
-            <div className="overflow-hidden rounded-xl border border-[#e3e3e0] bg-white dark:border-[#3E3E3A] dark:bg-[#161615]">
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[900px]">
+            {/* ══════════════════════════════════════ TABLE */}
+            <div style={{ borderRadius:20, overflow:'hidden', border:'1px solid #eee', background:'#fff', boxShadow:'0 2px 12px rgba(0,0,0,0.04)' }}>
+                <div style={{ height:3, background:'linear-gradient(90deg,#0284c7,#7c3aed,#db2777)' }}/>
+                <div style={{ overflowX:'auto' }}>
+                    <table style={{ width:'100%', minWidth:900, borderCollapse:'collapse', fontFamily:'system-ui,sans-serif' }}>
                         <thead>
-                            <tr className="border-b border-[#e3e3e0] bg-[#fafaf9] dark:border-[#3E3E3A] dark:bg-[#0a0a0a]">
-                                {['N° Examen', 'Patient', 'Examen', 'Modalité', 'Prescripteur', 'Date', 'Priorité', 'Statut', 'Actions'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#706f6c] dark:text-[#A1A09A]">{h}</th>
+                            <tr style={{ borderBottom:'1px solid #f5f5f3' }}>
+                                {['N° Examen','Patient','Examen','Modalité','Prescripteur','Date','Priorité','Statut','Actions'].map((h,i)=>(
+                                    <th key={i} style={{ padding:'12px 14px', textAlign:i===8?'right':'left', fontSize:11, fontWeight:700, color:'#c0c0bc', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#e3e3e0] dark:divide-[#3E3E3A]">
-                            {examens.data.map(e => (
-                                <tr key={e.id} className="hover:bg-[#fafaf9] dark:hover:bg-[#1C1C1A]">
-                                    <td className="px-4 py-4">
-                                        <span className="font-mono text-sm font-medium text-[#f53003]">{e.numero}</span>
-                                        {e.contre_indications?.length > 0 && (
-                                            <span className="ml-2 text-xs" title="Contre-indications signalées">⚠️</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${e.patient.sexe === 'M' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                                                {e.patient.prenom[0]}{e.patient.nom[0]}
+                        <tbody>
+                            {examens.data.length===0 ? (
+                                <tr><td colSpan={9} style={{ padding:'48px', textAlign:'center', color:'#c0c0bc', fontSize:14 }}>
+                                    <div style={{ fontSize:40, marginBottom:10 }}>🩻</div>
+                                    <p style={{ fontWeight:600, color:'#374151', marginBottom:4 }}>Aucun examen trouvé</p>
+                                    <p>Modifiez vos filtres ou créez une nouvelle demande.</p>
+                                </td></tr>
+                            ) : examens.data.map((e,i)=>{
+                                const sc = STATUT_CFG[e.statut] ?? STATUT_CFG['En attente'];
+                                const pc = PRIO_CFG[e.priorite] ?? PRIO_CFG['Normal'];
+                                return (
+                                    <tr key={e.id} style={{ borderBottom:i<examens.data.length-1?'1px solid #f5f5f3':'none', transition:'background 0.15s' }}
+                                        onMouseEnter={x=>(x.currentTarget as HTMLElement).style.background='#fafaf9'}
+                                        onMouseLeave={x=>(x.currentTarget as HTMLElement).style.background='transparent'}>
+                                        <td style={{ padding:'11px 14px', whiteSpace:'nowrap' }}>
+                                            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                                                <span style={{ fontFamily:'monospace', fontSize:12, fontWeight:700, color:'#f53003' }}>{e.numero}</span>
+                                                {e.contre_indications?.length>0 && <span title="Contre-indications">⚠️</span>}
                                             </div>
-                                            <span className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{e.patient.prenom} {e.patient.nom}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <p className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{e.type}</p>
-                                        {e.region_anatomique && <p className="text-xs text-[#706f6c]">{e.region_anatomique}</p>}
-                                    </td>
-                                    <td className="px-4 py-4"><ModaliteBadge modalite={e.modalite} /></td>
-                                    <td className="px-4 py-4">
-                                        <p className="text-sm text-[#1b1b18] dark:text-[#EDEDEC]">{e.prescripteur}</p>
-                                        <p className="text-xs text-[#706f6c]">{e.service}</p>
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-[#706f6c]">{e.date_examen ?? e.date_prescription}</td>
-                                    <td className="px-4 py-4"><PrioriteBadge p={e.priorite} /></td>
-                                    <td className="px-4 py-4"><StatusBadge status={e.statut} /></td>
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-1">
-                                            <button onClick={() => setSelected(e)}
-                                                className="rounded-lg p-1.5 text-[#706f6c] hover:bg-[#f5f5f3] dark:hover:bg-[#1C1C1A]" title="Voir">
-                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/></svg>
-                                            </button>
-                                            <button onClick={() => handleDelete(e)}
-                                                className="rounded-lg p-1.5 text-[#706f6c] hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400" title="Supprimer">
-                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M8 6V4C8 3.45 8.45 3 9 3H15C15.55 3 16 3.45 16 4V6M19 6V20C19 20.55 18.55 21 18 21H6C5.45 21 5 20.55 5 20V6H19Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td style={{ padding:'11px 14px' }}>
+                                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                                <div style={{ width:30, height:30, borderRadius:9, background:e.patient.sexe==='M'?'linear-gradient(135deg,#3b82f6,#2563eb)':'linear-gradient(135deg,#ec4899,#db2777)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#fff', flexShrink:0 }}>
+                                                    {e.patient.prenom[0]}{e.patient.nom[0]}
+                                                </div>
+                                                <span style={{ fontSize:13, fontWeight:600, color:'#1a1a18' }}>{e.patient.prenom} {e.patient.nom}</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding:'11px 14px', maxWidth:160 }}>
+                                            <p style={{ fontSize:13, fontWeight:600, color:'#1a1a18', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.type}</p>
+                                            {e.region_anatomique && <p style={{ fontSize:11, color:'#9ca3af', marginTop:1 }}>{e.region_anatomique}</p>}
+                                        </td>
+                                        <td style={{ padding:'11px 14px' }}><MBadge modalite={e.modalite}/></td>
+                                        <td style={{ padding:'11px 14px' }}>
+                                            <p style={{ fontSize:13, color:'#374151' }}>{e.prescripteur}</p>
+                                            <p style={{ fontSize:11, color:'#9ca3af', marginTop:1 }}>{e.service}</p>
+                                        </td>
+                                        <td style={{ padding:'11px 14px', fontSize:12, color:'#9ca3af', whiteSpace:'nowrap' }}>{e.date_examen??e.date_prescription}</td>
+                                        <td style={{ padding:'11px 14px' }}><Badge label={e.priorite} cfg={pc}/></td>
+                                        <td style={{ padding:'11px 14px' }}><Badge label={e.statut} cfg={sc}/></td>
+                                        <td style={{ padding:'11px 14px' }}>
+                                            <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:2 }}>
+                                                <button onClick={()=>setSelected(e)} title="Voir"
+                                                    style={{ width:28, height:28, borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                                    onMouseEnter={x=>(x.currentTarget as HTMLElement).style.background='#f0f0ee'}
+                                                    onMouseLeave={x=>(x.currentTarget as HTMLElement).style.background='transparent'}>
+                                                    <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                </button>
+                                                <button onClick={()=>del(e)} title="Supprimer"
+                                                    style={{ width:28, height:28, borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                                    onMouseEnter={x=>(x.currentTarget as HTMLElement).style.background='#fef2f2'}
+                                                    onMouseLeave={x=>(x.currentTarget as HTMLElement).style.background='transparent'}>
+                                                    <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
-
-                {examens.data.length === 0 && (
-                    <div className="py-14 text-center">
-                        <p className="mb-2 text-4xl">🩻</p>
-                        <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Aucun examen trouvé</p>
-                        <p className="text-sm text-[#706f6c]">Modifiez vos filtres ou créez une nouvelle demande.</p>
-                    </div>
-                )}
-
-                <div className="flex items-center justify-between border-t border-[#e3e3e0] px-4 py-3 dark:border-[#3E3E3A]">
-                    <p className="text-sm text-[#706f6c]">
-                        <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{examens.total}</span> examens
-                    </p>
-                    {examens.last_page > 1 && (
-                        <div className="flex gap-1">
-                            {examens.links.map((l, i) => (
-                                <button key={i} disabled={!l.url}
-                                    onClick={() => l.url && router.get(l.url, {}, { preserveState: true })}
-                                    className={`rounded px-3 py-1.5 text-sm ${l.active ? 'bg-[#f53003] text-white' : 'border border-[#e3e3e0] text-[#706f6c] hover:bg-[#f5f5f3] disabled:opacity-40 dark:border-[#3E3E3A] dark:text-[#A1A09A]'}`}
-                                    dangerouslySetInnerHTML={{ __html: l.label }} />
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 18px', borderTop:'1px solid #f5f5f3' }}>
+                    <span style={{ fontSize:13, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>
+                        <span style={{ fontWeight:600, color:'#1a1a18' }}>{examens.total}</span> examens
+                    </span>
+                    {examens.last_page>1 && (
+                        <div style={{ display:'flex', gap:4 }}>
+                            {examens.links.map((link,i)=>(
+                                <button key={i} disabled={!link.url} onClick={()=>link.url&&router.get(link.url,{},{preserveState:true})}
+                                    style={{ minWidth:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:7, fontSize:12, fontFamily:'system-ui,sans-serif', fontWeight:link.active?700:400, background:link.active?'#f53003':'transparent', color:link.active?'#fff':'#706f6c', border:link.active?'none':'1px solid #f0f0ee', cursor:link.url?'pointer':'not-allowed', opacity:link.url?1:0.4, padding:'0 6px' }}
+                                    dangerouslySetInnerHTML={{ __html:link.label }}/>
                             ))}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Modals */}
-            {showNew && (
-                <NouvelleDemandeModal
-                    modalites={modalites ?? []}
-                    typesExamens={typesExamens ?? []}
-                    patients={patients ?? []}
-                    medecins={medecins ?? []}
-                    onClose={() => setShowNew(false)} />
-            )}
-            {selected && (
-                <DetailModal
-                    examen={selected}
-                    medecins={medecins ?? []}
-                    onClose={() => setSelected(null)} />
-            )}
+            {showNew && <NouvelleDemandeModal modalites={modalites??[]} typesExamens={typesExamens??[]} patients={patients??[]} medecins={medecins??[]} onClose={()=>setShowNew(false)}/>}
+            {selected && <DetailModal examen={selected} medecins={medecins??[]} onClose={()=>setSelected(null)}/>}
         </DashboardLayout>
     );
 }

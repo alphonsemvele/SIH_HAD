@@ -74,7 +74,7 @@ class OccupationRoomController extends Controller
                 'motif_sortie' => $o->motif_sortie,
             ]);
 
-        return Inertia::render('dashboard/occupations-show', [
+        return Inertia::render('dashboard/occupation-show', [
             'occupation'  => new OccupationRoomResource($occupationRoom),
             'precedentes' => $precedentes,
         ]);
@@ -154,7 +154,7 @@ class OccupationRoomController extends Controller
         );
 
         return redirect()
-            ->route('occupations.show', $occupation)
+            ->route('occupation.show', $occupation)
             ->with('success', 'Patient admis avec succès.');
     }
 

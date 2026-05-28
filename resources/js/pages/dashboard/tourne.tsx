@@ -4,505 +4,339 @@ import DashboardLayout from './layout';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Statut = 'planifiee' | 'en_cours' | 'terminee' | 'annulee';
-type Priorite = 'normal' | 'surveillance' | 'critique';
-type TypeTournee = 'complete' | 'cas_critiques' | 'chambre_specifique';
-type RecurrenceType = 'unique' | 'quotidienne' | 'hebdomadaire' | 'personnalisee';
-type Frequence = 1 | 2 | 3;
+type Statut        = 'planifiee'|'en_cours'|'terminee'|'annulee';
+type Priorite      = 'normal'|'surveillance'|'critique';
+type TypeTournee   = 'complete'|'cas_critiques'|'chambre_specifique';
+type RecurrenceType = 'unique'|'quotidienne'|'hebdomadaire'|'personnalisee';
+type Frequence     = 1|2|3;
 
-interface VisiteHad {
-    id: number;
-    patient_id: number;
-    ordre: number;
-    priorite: Priorite;
-    chambre: string;
-    lit: string;
-    diagnostic: string;
-    jours_hospitalisation: number;
-    observations: string;
-    visite_at: string | null;
-    notes_soignant: string;
-    temperature: string;
-    tension: string;
-    pouls: string;
-    saturation: string;
-    patient: {
-        id: number;
-        nom: string;
-        prenom: string;
-        sexe: 'M' | 'F';
-        age: number;
-    };
-}
-
-interface Tournee {
-    id: number;
-    soignant_id: number;
-    service_id: number;
-    date: string;
-    vehicule: string | null;
-    heure_debut_prevue: string;
-    heure_fin_prevue: string | null;
-    heure_debut_effective: string | null;
-    heure_fin_effective: string | null;
-    kilometres: string | null;
-    type: TypeTournee;
-    notes: string;
-    statut: Statut;
-    patients_total: number;
-    patients_vus: number;
-    recurrence?: RecurrenceType;
-    jours_actifs?: number[];
-    frequence_journaliere?: Frequence;
-    heure_debut_2?: string;
-    heure_debut_3?: string;
-    date_fin_recurrence?: string;
-    soignant: { id: number; name: string };
-    service: { id: number; nom: string; etage: string };
-    visite_hads: VisiteHad[];
-}
-
-interface Service {
-    id: number;
-    nom: string;
-    etage: string;
-    patients_actuels: number;
-}
-
-interface Soignant {
-    id: number;
-    name: string;
-}
-
-interface Props {
-    tournees: Tournee[];
-    services: Service[];
-    soignants: Soignant[];
-    stats: {
-        tournees_jour: number;
-        en_cours: number;
-        terminees: number;
-        patients_a_visiter: number;
-        patients_vus: number;
-    };
-    filters: {
-        service_id?: string;
-        soignant_id?: string;
-        statut?: string;
-    };
-}
+interface VisiteHad { id: number; patient_id: number; ordre: number; priorite: Priorite; chambre: string; lit: string; diagnostic: string; jours_hospitalisation: number; observations: string; visite_at: string|null; notes_soignant: string; temperature: string; tension: string; pouls: string; saturation: string; patient: { id: number; nom: string; prenom: string; sexe: 'M'|'F'; age: number; }; }
+interface Tournee  { id: number; soignant_id: number; service_id: number; date: string; vehicule: string|null; heure_debut_prevue: string; heure_fin_prevue: string|null; heure_debut_effective: string|null; heure_fin_effective: string|null; kilometres: string|null; type: TypeTournee; notes: string; statut: Statut; patients_total: number; patients_vus: number; recurrence?: RecurrenceType; jours_actifs?: number[]; frequence_journaliere?: Frequence; heure_debut_2?: string; heure_debut_3?: string; date_fin_recurrence?: string; soignant: { id: number; name: string }; service: { id: number; nom: string; etage: string }; visite_hads: VisiteHad[]; }
+interface Service  { id: number; nom: string; etage: string; patients_actuels: number; }
+interface Soignant { id: number; name: string; }
+interface Props    { tournees: Tournee[]; services: Service[]; soignants: Soignant[]; stats: { tournees_jour: number; en_cours: number; terminees: number; patients_a_visiter: number; patients_vus: number }; filters: { service_id?: string; soignant_id?: string; statut?: string }; }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const statutConfig: Record<Statut, { label: string; badge: string; icon: string; btn: string; btnText: string }> = {
-    planifiee: { label: 'Planifiée', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',       icon: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',       btn: 'bg-[#f53003] hover:bg-[#d42a03] text-white',                                                                                          btnText: 'Démarrer'  },
-    en_cours:  { label: 'En cours',  badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400', btn: 'bg-orange-500 hover:bg-orange-600 text-white',                                                                                         btnText: 'Continuer' },
-    terminee:  { label: 'Terminée',  badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',    icon: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',    btn: 'border border-[#e3e3e0] bg-white text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]', btnText: 'Voir'      },
-    annulee:   { label: 'Annulée',   badge: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',        icon: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',            btn: 'border border-[#e3e3e0] bg-white text-[#706f6c]',                                                                                      btnText: 'Voir'      },
+const STATUT_CFG: Record<Statut, { label: string; color: string; bg: string; border: string; btnGrad: string }> = {
+    planifiee: { label:'Planifiée', color:'#2563eb', bg:'#eff6ff', border:'#bfdbfe', btnGrad:'linear-gradient(135deg,#f53003,#e02a00)' },
+    en_cours:  { label:'En cours',  color:'#d97706', bg:'#fffbeb', border:'#fde68a', btnGrad:'linear-gradient(135deg,#f97316,#ea580c)' },
+    terminee:  { label:'Terminée',  color:'#16a34a', bg:'#f0fdf4', border:'#bbf7d0', btnGrad:'transparent' },
+    annulee:   { label:'Annulée',   color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb', btnGrad:'transparent' },
 };
-
-const prioriteConfig: Record<Priorite, string> = {
-    normal:       'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-    surveillance: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    critique:     'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+const PRIO_CFG: Record<Priorite, { color: string; bg: string; border: string }> = {
+    normal:       { color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb' },
+    surveillance: { color:'#d97706', bg:'#fffbeb', border:'#fde68a' },
+    critique:     { color:'#dc2626', bg:'#fef2f2', border:'#fecaca' },
 };
-
-const prioriteLabel: Record<Priorite, string> = { normal: 'Normal', surveillance: 'Surveillance', critique: 'Critique' };
-
-const JOURS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-
-const recurrenceOptions: { value: RecurrenceType; label: string; desc: string; icon: string }[] = [
-    { value: 'unique',        label: 'Unique',        desc: 'Une seule fois',             icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-    { value: 'quotidienne',   label: 'Quotidienne',   desc: 'Tous les jours',             icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
-    { value: 'hebdomadaire',  label: 'Hebdomadaire',  desc: 'Mêmes jours chaque semaine', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
-    { value: 'personnalisee', label: 'Personnalisée', desc: 'Choisir les jours',           icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
+const PRIO_LABEL: Record<Priorite, string> = { normal:'Normal', surveillance:'Surveillance', critique:'Critique' };
+const JOURS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const recurrenceOpts: { value: RecurrenceType; label: string; desc: string }[] = [
+    { value:'unique',        label:'Unique',        desc:'Une seule fois' },
+    { value:'quotidienne',   label:'Quotidienne',   desc:'Tous les jours' },
+    { value:'hebdomadaire',  label:'Hebdomadaire',  desc:'Mêmes jours/sem' },
+    { value:'personnalisee', label:'Personnalisée', desc:'Jours au choix' },
 ];
+const defaultStats = { tournees_jour:0, en_cours:0, terminees:0, patients_a_visiter:0, patients_vus:0 };
 
-const defaultStats = { tournees_jour: 0, en_cours: 0, terminees: 0, patients_a_visiter: 0, patients_vus: 0 };
+const iSx: React.CSSProperties = { width:'100%', height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', boxSizing:'border-box' };
+const fIn  = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f53003'; e.currentTarget.style.background='#fff'; };
+const fOut = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f0f0ee'; e.currentTarget.style.background='#fafaf9'; };
 
-// ─── Composant principal ──────────────────────────────────────────────────────
+function Badge({ label, cfg }: { label:string; cfg: { color:string; bg:string; border:string } }) {
+    return <span style={{ fontSize:11, fontWeight:700, color:cfg.color, background:cfg.bg, border:`1px solid ${cfg.border}`, borderRadius:100, padding:'3px 10px', whiteSpace:'nowrap', fontFamily:'system-ui,sans-serif' }}>{label}</span>;
+}
+function FL({ label, children }: { label:string; children:React.ReactNode }) {
+    return <div><label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>{label}</label>{children}</div>;
+}
+
+// ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function Tournees({
-    tournees = [], services = [], soignants = [],
-    stats = defaultStats, filters = {},
+    tournees=[], services=[], soignants=[],
+    stats=defaultStats, filters={},
 }: Partial<Props>) {
-    const { flash, errors } = usePage<{
-        flash?: { success?: string; error?: string };
-        errors?: Record<string, string>;
-    }>().props;
+    const { flash, errors } = usePage<{ flash?: { success?:string; error?:string }; errors?: Record<string,string> }>().props;
 
-    const [activeTab,          setActiveTab]          = useState<'aujourdhui' | 'planning' | 'historique'>('aujourdhui');
-    const [showNewTournee,     setShowNewTournee]      = useState(false);
-    const [selectedTournee,    setSelectedTournee]    = useState<Tournee | null>(null);
-    const [selectedVisite,     setSelectedVisite]     = useState<VisiteHad | null>(null);
-    const [filterForm,         setFilterForm]         = useState(filters);
-    const [planningWeekOffset, setPlanningWeekOffset] = useState(0);
+    const [activeTab,   setActiveTab]   = useState<'aujourdhui'|'planning'|'historique'>('aujourdhui');
+    const [showNew,     setShowNew]     = useState(false);
+    const [selTournee,  setSelTournee]  = useState<Tournee|null>(null);
+    const [selVisite,   setSelVisite]   = useState<VisiteHad|null>(null);
+    const [filterForm,  setFilterForm]  = useState(filters);
+    const [weekOffset,  setWeekOffset]  = useState(0);
 
-    const [newForm, setNewForm] = useState({
-        soignant_id: '', service_id: '',
-        date: new Date().toISOString().slice(0, 10),
-        heure_debut_prevue: '', heure_fin_prevue: '',
-        vehicule: '',
-        type: 'complete' as TypeTournee,
-        notes: '',
-        recurrence: 'unique' as RecurrenceType,
-        jours_actifs: [1, 2, 3, 4, 5] as number[],
-        frequence_journaliere: 1 as Frequence,
-        heure_debut_2: '',
-        heure_debut_3: '',
-        date_fin_recurrence: '',
-    });
+    const [newForm, setNewForm] = useState({ soignant_id:'', service_id:'', date:new Date().toISOString().slice(0,10), heure_debut_prevue:'', heure_fin_prevue:'', vehicule:'', type:'complete' as TypeTournee, notes:'', recurrence:'unique' as RecurrenceType, jours_actifs:[1,2,3,4,5] as number[], frequence_journaliere:1 as Frequence, heure_debut_2:'', heure_debut_3:'', date_fin_recurrence:'' });
+    const [obsForm, setObsForm] = useState({ observations:'', temperature:'', tension:'', pouls:'', saturation:'', notes_soignant:'' });
 
-    const [observationForm, setObservationForm] = useState({
-        observations: '', temperature: '', tension: '', pouls: '', saturation: '', notes_soignant: '',
-    });
-
-    // ── Planning semaine ──────────────────────────────────────────────────
+    // ── Planning semaine ──────────────────────────────────────────────────────
     const weekDays = useMemo(() => {
         const today = new Date();
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - today.getDay() + 1 + planningWeekOffset * 7);
-        return Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(monday);
-            d.setDate(monday.getDate() + i);
-            return d;
-        });
-    }, [planningWeekOffset]);
+        const mon = new Date(today); mon.setDate(today.getDate()-today.getDay()+1+weekOffset*7);
+        return Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
+    }, [weekOffset]);
 
     const tourneesByDay = useMemo(() => {
-        const map: Record<string, Tournee[]> = {};
-        weekDays.forEach(d => { map[d.toISOString().slice(0, 10)] = []; });
-        tournees.forEach(t => { if (map[t.date]) map[t.date].push(t); });
+        const map: Record<string,Tournee[]> = {};
+        weekDays.forEach(d=>{ map[d.toISOString().slice(0,10)]=[]; });
+        tournees.forEach(t=>{ if(map[t.date]) map[t.date].push(t); });
         return map;
-    }, [tournees, weekDays]);
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-    const toggleJour = (jour: number) => {
-        setNewForm(p => ({
-            ...p,
-            jours_actifs: p.jours_actifs.includes(jour)
-                ? p.jours_actifs.filter(j => j !== jour)
-                : [...p.jours_actifs, jour],
-        }));
-    };
-
-    const applyFilters = () => router.get('/tournees', filterForm, { preserveScroll: true, replace: true });
-
-    const submitNewTournee = (e: React.FormEvent) => {
-        e.preventDefault();
-        router.post('/tournees', newForm, { preserveScroll: true, onSuccess: () => setShowNewTournee(false) });
-    };
-
-    const demarrer = (tournee: Tournee) => {
-        router.post(`/tournees/${tournee.id}/demarrer`, {}, {
-            preserveScroll: true,
-            onSuccess: () => setSelectedTournee(t => t ? { ...t, statut: 'en_cours', heure_debut_effective: new Date().toTimeString().slice(0, 5) } : t),
-        });
-    };
-
-    const terminer = () => {
-        if (!selectedTournee) return;
-        router.post(`/tournees/${selectedTournee.id}/terminer`, {}, {
-            preserveScroll: true,
-            onSuccess: () => { setSelectedTournee(null); setSelectedVisite(null); },
-        });
-    };
-
-    const suspendre = () => {
-        if (!selectedTournee) return;
-        router.post(`/tournees/${selectedTournee.id}/suspendre`, {}, {
-            preserveScroll: true,
-            onSuccess: () => setSelectedTournee(null),
-        });
-    };
-
-    const validerVisite = () => {
-        if (!selectedVisite || !selectedTournee) return;
-        router.post(`/tournees/${selectedTournee.id}/visites/${selectedVisite.id}/valider`, observationForm, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setSelectedTournee(prev => {
-                    if (!prev) return prev;
-                    const visite_hads = prev.visite_hads.map(v =>
-                        v.id === selectedVisite.id ? { ...v, visite_at: new Date().toISOString(), observations: observationForm.observations } : v
-                    );
-                    return { ...prev, visite_hads, patients_vus: visite_hads.filter(v => v.visite_at !== null).length };
-                });
-                setObservationForm({ observations: '', temperature: '', tension: '', pouls: '', saturation: '', notes_soignant: '' });
-                const next = selectedTournee.visite_hads.find(v => v.id !== selectedVisite.id && v.visite_at === null);
-                setSelectedVisite(next ?? null);
-            },
-        });
-    };
-
-    const ouvrirVisite = (visite: VisiteHad) => {
-        setSelectedVisite(visite);
-        setObservationForm({
-            observations: '', temperature: visite.temperature ?? '',
-            tension: visite.tension ?? '', pouls: visite.pouls ?? '',
-            saturation: visite.saturation ?? '', notes_soignant: '',
-        });
-    };
-
-    const ouvrirTournee = (tournee: Tournee) => {
-        setSelectedTournee(tournee);
-        const premier = [...tournee.visite_hads].sort((a, b) => a.ordre - b.ordre).find(v => v.visite_at === null);
-        if (premier) ouvrirVisite(premier);
-        else setSelectedVisite(null);
-        if (tournee.statut === 'planifiee') demarrer(tournee);
-    };
+    }, [tournees,weekDays]);
 
     const recurrenceSummary = useMemo(() => {
         const { recurrence, jours_actifs, frequence_journaliere, date_fin_recurrence } = newForm;
-        const joursLabels = [...jours_actifs].sort().map(j => JOURS[j]).join(', ');
-        const freq = frequence_journaliere > 1 ? ` · ${frequence_journaliere}×/jour` : '';
-        const fin  = date_fin_recurrence ? ` · jusqu'au ${new Date(date_fin_recurrence).toLocaleDateString('fr-FR')}` : '';
-        if (recurrence === 'unique')        return 'Une seule occurrence';
-        if (recurrence === 'quotidienne')   return `Tous les jours${freq}${fin}`;
-        if (recurrence === 'hebdomadaire')  return `Chaque semaine · ${joursLabels}${freq}${fin}`;
-        return `Jours sélectionnés : ${joursLabels}${freq}${fin}`;
+        const joursL = [...jours_actifs].sort().map(j=>JOURS[j]).join(', ');
+        const freq   = frequence_journaliere>1 ? ` · ${frequence_journaliere}×/jour` : '';
+        const fin    = date_fin_recurrence ? ` · jusqu'au ${new Date(date_fin_recurrence).toLocaleDateString('fr-FR')}` : '';
+        if (recurrence==='unique')       return 'Une seule occurrence';
+        if (recurrence==='quotidienne')  return `Tous les jours${freq}${fin}`;
+        if (recurrence==='hebdomadaire') return `Chaque semaine · ${joursL}${freq}${fin}`;
+        return `Jours sélectionnés : ${joursL}${freq}${fin}`;
     }, [newForm]);
+
+    // ── Actions ───────────────────────────────────────────────────────────────
+    const applyFilters  = () => router.get('/tournees', filterForm, { preserveScroll:true, replace:true });
+    const submitNew     = (e: React.FormEvent) => { e.preventDefault(); router.post('/tournees', newForm, { preserveScroll:true, onSuccess:()=>setShowNew(false) }); };
+    const demarrer      = (t: Tournee) => router.post(`/tournees/${t.id}/demarrer`,{},{preserveScroll:true,onSuccess:()=>setSelTournee(p=>p?{...p,statut:'en_cours',heure_debut_effective:new Date().toTimeString().slice(0,5)}:p)});
+    const terminer      = () => { if(!selTournee) return; router.post(`/tournees/${selTournee.id}/terminer`,{},{preserveScroll:true,onSuccess:()=>{setSelTournee(null);setSelVisite(null);}}); };
+    const suspendre     = () => { if(!selTournee) return; router.post(`/tournees/${selTournee.id}/suspendre`,{},{preserveScroll:true,onSuccess:()=>setSelTournee(null)}); };
+    const validerVisite = () => {
+        if(!selVisite||!selTournee) return;
+        router.post(`/tournees/${selTournee.id}/visites/${selVisite.id}/valider`, obsForm, { preserveScroll:true, onSuccess:()=>{
+            setSelTournee(prev=>{ if(!prev) return prev; const vh=prev.visite_hads.map(v=>v.id===selVisite.id?{...v,visite_at:new Date().toISOString(),observations:obsForm.observations}:v); return {...prev,visite_hads:vh,patients_vus:vh.filter(v=>v.visite_at!==null).length}; });
+            setObsForm({observations:'',temperature:'',tension:'',pouls:'',saturation:'',notes_soignant:''});
+            const next = selTournee.visite_hads.find(v=>v.id!==selVisite.id&&v.visite_at===null);
+            setSelVisite(next??null);
+        }});
+    };
+    const ouvrirVisite  = (v: VisiteHad) => { setSelVisite(v); setObsForm({observations:'',temperature:v.temperature??'',tension:v.tension??'',pouls:v.pouls??'',saturation:v.saturation??'',notes_soignant:''}); };
+    const ouvrirTournee = (t: Tournee) => {
+        setSelTournee(t);
+        const premier = [...t.visite_hads].sort((a,b)=>a.ordre-b.ordre).find(v=>v.visite_at===null);
+        if (premier) ouvrirVisite(premier); else setSelVisite(null);
+        if (t.statut==='planifiee') demarrer(t);
+    };
+    const toggleJour = (j: number) => setNewForm(p=>({...p,jours_actifs:p.jours_actifs.includes(j)?p.jours_actifs.filter(x=>x!==j):[...p.jours_actifs,j]}));
 
     return (
         <DashboardLayout title="Tournées médicales" subtitle="Visites des soignants dans les services">
 
             {/* Flash */}
-            {(flash?.success || flash?.error) && (
-                <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${flash.error ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400' : 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400'}`}>
-                    {flash.success ?? flash.error}
+            {(flash?.success||flash?.error) && (
+                <div style={{ marginBottom:16, padding:'12px 16px', borderRadius:14, background:flash.error?'#fef2f2':'#f0fdf4', border:`1px solid ${flash.error?'#fecaca':'#bbf7d0'}`, fontSize:13, color:flash.error?'#dc2626':'#16a34a', fontFamily:'system-ui,sans-serif', display:'flex', gap:8, alignItems:'center' }}>
+                    {flash.error?'⚠️':'✅'} {flash.success??flash.error}
+                </div>
+            )}
+            {errors && Object.keys(errors).length>0 && (
+                <div style={{ marginBottom:16, padding:'12px 16px', borderRadius:14, background:'#fef2f2', border:'1px solid #fecaca', fontSize:13, fontFamily:'system-ui,sans-serif' }}>
+                    <p style={{ fontWeight:700, color:'#dc2626', marginBottom:8 }}>Erreurs :</p>
+                    {Object.entries(errors).map(([f,m])=><p key={f} style={{ color:'#b91c1c' }}><strong>{f}</strong> : {m}</p>)}
                 </div>
             )}
 
-            {/* Erreurs de validation */}
-            {errors && Object.keys(errors).length > 0 && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-                    <p className="mb-2 text-sm font-medium text-red-800 dark:text-red-400">Erreurs de validation :</p>
-                    <ul className="space-y-1">
-                        {Object.entries(errors).map(([field, msg]) => (
-                            <li key={field} className="text-sm text-red-700 dark:text-red-400">
-                                <span className="font-medium">{field}</span> : {msg}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {/* ── Stats ─────────────────────────────────────────────── */}
-            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                <StatCard title="Tournées du jour"   value={stats.tournees_jour}      color="blue"   icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                <StatCard title="En cours"           value={stats.en_cours}           color="orange" icon="M12 2V6M12 18V22M6 12H2M22 12H18" />
-                <StatCard title="Terminées"          value={stats.terminees}          color="green"  icon="M20 6L9 17L4 12" />
-                <StatCard title="À visiter"          value={stats.patients_a_visiter} color="purple" icon="M17 21V19C17 16.791 15.209 15 13 15H5C2.791 15 1 16.791 1 19V21M9 11C11.209 11 13 9.209 13 7C13 4.791 11.209 3 9 3C6.791 3 5 4.791 5 7C5 9.209 6.791 11 9 11Z" />
-                <StatCard title="Patients vus"       value={stats.patients_vus}       color="teal"   icon="M16 21V19C16 16.7909 14.2091 15 12 15H5C2.79086 15 1 16.7909 1 19V21M8.5 11C10.709 11 12.5 9.209 12.5 7C12.5 4.791 10.709 3 8.5 3C6.291 3 4.5 4.791 4.5 7C4.5 9.209 6.291 11 8.5 11ZM17 11L19 13L23 9" />
+            {/* ══════════════════════════════════════ KPI */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:14, marginBottom:24 }}>
+                {[
+                    { label:"Tournées du jour", value:stats.tournees_jour, icon:'📋', grad:'linear-gradient(135deg,#1a1a18,#2d2d2a)', shadow:'rgba(0,0,0,0.25)' },
+                    { label:"En cours",          value:stats.en_cours,      icon:'🔄', grad:'linear-gradient(135deg,#b45309,#f59e0b)', shadow:'rgba(245,158,11,0.35)' },
+                    { label:"Terminées",         value:stats.terminees,     icon:'✅', grad:'linear-gradient(135deg,#065f46,#10b981)', shadow:'rgba(16,185,129,0.35)' },
+                    { label:"À visiter",         value:stats.patients_a_visiter, icon:'👥', grad:'linear-gradient(135deg,#4c1d95,#7c3aed)', shadow:'rgba(124,58,237,0.35)' },
+                    { label:"Patients vus",      value:stats.patients_vus,  icon:'👁️', grad:'linear-gradient(135deg,#0c4a6e,#0284c7)', shadow:'rgba(2,132,199,0.35)' },
+                ].map((k,i)=>(
+                    <div key={i} style={{ borderRadius:18, padding:'20px', background:k.grad, color:'#fff', position:'relative', overflow:'hidden', boxShadow:`0 8px 24px ${k.shadow}` }}>
+                        <div style={{ position:'absolute', top:-14, right:-14, width:70, height:70, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }}/>
+                        <div style={{ fontSize:22, marginBottom:8 }}>{k.icon}</div>
+                        <div style={{ fontSize:28, fontWeight:800, letterSpacing:'-0.5px', lineHeight:1 }}>{k.value}</div>
+                        <div style={{ fontSize:11, fontWeight:500, opacity:0.85, marginTop:4, fontFamily:'system-ui,sans-serif' }}>{k.label}</div>
+                    </div>
+                ))}
             </div>
 
-            {/* ── Tabs ──────────────────────────────────────────────── */}
-            <div className="mb-6 flex items-center gap-1 rounded-lg bg-[#f5f5f3] p-1 dark:bg-[#1C1C1A]">
-                {(['aujourdhui', 'planning', 'historique'] as const).map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)}
-                        className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab ? 'bg-white text-[#1b1b18] shadow-sm dark:bg-[#161615] dark:text-[#EDEDEC]' : 'text-[#706f6c] hover:text-[#1b1b18] dark:text-[#A1A09A]'}`}>
-                        {tab === 'aujourdhui' ? "Aujourd'hui" : tab === 'planning' ? 'Planning semaine' : 'Historique'}
+            {/* ══════════════════════════════════════ TABS */}
+            <div style={{ display:'flex', alignItems:'center', gap:2, marginBottom:20, background:'#f5f5f3', borderRadius:12, padding:4 }}>
+                {(['aujourdhui','planning','historique'] as const).map(tab=>(
+                    <button key={tab} onClick={()=>setActiveTab(tab)}
+                        style={{ flex:1, height:36, borderRadius:9, border:'none', cursor:'pointer', fontSize:13, fontWeight:600, fontFamily:'system-ui,sans-serif', transition:'all 0.15s', background:activeTab===tab?'#fff':'transparent', color:activeTab===tab?'#1a1a18':'#9ca3af', boxShadow:activeTab===tab?'0 1px 4px rgba(0,0,0,0.08)':'none' }}>
+                        {tab==='aujourdhui'?"Aujourd'hui":tab==='planning'?'Planning semaine':'Historique'}
                     </button>
                 ))}
             </div>
 
-            {/* ── Filtres + bouton ──────────────────────────────────── */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-1 flex-wrap items-center gap-3">
-                    <select value={filterForm.service_id ?? ''} onChange={e => setFilterForm(p => ({ ...p, service_id: e.target.value }))} onBlur={applyFilters} className={selectCls}>
-                        <option value="">Tous les services</option>
-                        {services.map(s => <option key={s.id} value={s.id}>{s.nom}</option>)}
-                    </select>
-                    <select value={filterForm.soignant_id ?? ''} onChange={e => setFilterForm(p => ({ ...p, soignant_id: e.target.value }))} onBlur={applyFilters} className={selectCls}>
-                        <option value="">Tous les soignants</option>
-                        {soignants.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                    <select value={filterForm.statut ?? ''} onChange={e => setFilterForm(p => ({ ...p, statut: e.target.value }))} onBlur={applyFilters} className={selectCls}>
-                        <option value="">Tous les statuts</option>
-                        {Object.entries(statutConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                    </select>
+            {/* ══════════════════════════════════════ TOOLBAR */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:20, flexWrap:'wrap' }}>
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                    {[
+                        { val:filterForm.service_id??'',  key:'service_id',  opts:[['','Tous les services'], ...services.map(s=>[String(s.id),s.nom])] },
+                        { val:filterForm.soignant_id??'', key:'soignant_id', opts:[['','Tous les soignants'],...soignants.map(s=>[String(s.id),s.name])] },
+                        { val:filterForm.statut??'',      key:'statut',      opts:[['','Tous les statuts'],...Object.entries(STATUT_CFG).map(([k,v])=>[k,v.label])] },
+                    ].map((f,i)=>(
+                        <select key={i} value={f.val} onChange={e=>setFilterForm(p=>({...p,[f.key]:e.target.value}))} onBlur={applyFilters}
+                            style={{ height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', cursor:'pointer' }}>
+                            {f.opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                        </select>
+                    ))}
                 </div>
-                <button onClick={() => setShowNewTournee(true)}
-                    className="flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03]">
-                    <SvgIcon path="M12 5V19M5 12H19" className="h-5 w-5"/>
+                <button onClick={()=>setShowNew(true)}
+                    style={{ display:'flex', alignItems:'center', gap:7, height:38, padding:'0 16px', borderRadius:10, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(245,48,3,0.3)', transition:'transform 0.15s' }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform='translateY(-1px)'}
+                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform='none'}>
+                    <svg style={{width:14,height:14}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v14M5 12h14"/></svg>
                     Planifier une tournée
                 </button>
             </div>
 
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* VUE — Planning semaine                                   */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {activeTab === 'planning' && (
+            {/* ══════════════════════════════════════ VUE PLANNING SEMAINE */}
+            {activeTab==='planning' && (
                 <div>
-                    <div className="mb-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <button onClick={() => setPlanningWeekOffset(p => p - 1)}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e3e3e0] bg-white text-[#706f6c] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                <SvgIcon path="M15 18l-6-6 6-6" className="h-4 w-4"/>
-                            </button>
-                            <h3 className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
-                                {weekDays[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} — {weekDays[6].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </h3>
-                            <button onClick={() => setPlanningWeekOffset(p => p + 1)}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e3e3e0] bg-white text-[#706f6c] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                <SvgIcon path="M9 18l6-6-6-6" className="h-4 w-4"/>
-                            </button>
-                            {planningWeekOffset !== 0 && (
-                                <button onClick={() => setPlanningWeekOffset(0)}
-                                    className="rounded-md border border-[#e3e3e0] px-3 py-1 text-xs text-[#706f6c] hover:bg-[#f5f5f3] dark:border-[#3E3E3A]">
-                                    Aujourd'hui
-                                </button>
-                            )}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                            {[{fn:()=>setWeekOffset(p=>p-1),icon:'‹'},{fn:()=>setWeekOffset(p=>p+1),icon:'›'}].map((btn,i)=>(
+                                <button key={i} onClick={btn.fn} style={{ width:32, height:32, borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', fontSize:18, color:'#706f6c', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'system-ui,sans-serif' }}>{btn.icon}</button>
+                            ))}
+                            <span style={{ fontSize:14, fontWeight:600, color:'#1a1a18', fontFamily:'system-ui,sans-serif' }}>
+                                {weekDays[0].toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} — {weekDays[6].toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+                            </span>
+                            {weekOffset!==0 && <button onClick={()=>setWeekOffset(0)} style={{ height:28, padding:'0 10px', borderRadius:8, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:12, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Aujourd'hui</button>}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                            <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-blue-400"/> Planifiée</span>
-                            <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-orange-400"/> En cours</span>
-                            <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-green-400"/> Terminée</span>
+                        <div style={{ display:'flex', gap:14 }}>
+                            {[{color:'#3b82f6',label:'Planifiée'},{color:'#f97316',label:'En cours'},{color:'#10b981',label:'Terminée'}].map(({color,label})=>(
+                                <div key={label} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                                    <div style={{ width:8, height:8, borderRadius:2, background:color }}/>
+                                    <span style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>{label}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-2">
-                        {weekDays.map((day) => {
-                            const iso         = day.toISOString().slice(0, 10);
-                            const isToday     = iso === new Date().toISOString().slice(0, 10);
-                            const dayTournees = tourneesByDay[iso] ?? [];
-                            const isWeekend   = day.getDay() === 0 || day.getDay() === 6;
-                            const dot: Record<Statut, string> = { planifiee: 'bg-blue-400', en_cours: 'bg-orange-400', terminee: 'bg-green-400', annulee: 'bg-gray-300' };
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:10 }}>
+                        {weekDays.map(day=>{
+                            const iso      = day.toISOString().slice(0,10);
+                            const isToday  = iso===new Date().toISOString().slice(0,10);
+                            const dayT     = tourneesByDay[iso]??[];
+                            const isWeekend= day.getDay()===0||day.getDay()===6;
                             return (
-                                <div key={iso} className={`rounded-xl border p-3 ${isWeekend ? 'bg-[#fafaf9] dark:bg-[#0a0a0a]' : 'bg-white dark:bg-[#161615]'} ${isToday ? 'border-[#f53003]' : 'border-[#e3e3e0] dark:border-[#3E3E3A]'}`}>
-                                    <div className="mb-2 flex items-center justify-between">
+                                <div key={iso} style={{ borderRadius:16, border:`1.5px solid ${isToday?'#f53003':'#f0f0ee'}`, background:isWeekend?'#fafaf9':'#fff', padding:12, minHeight:140 }}>
+                                    <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
                                         <div>
-                                            <p className={`text-xs font-medium ${isWeekend ? 'text-[#A1A09A]' : 'text-[#706f6c]'}`}>{JOURS[day.getDay()]}</p>
-                                            <p className={`text-base font-semibold ${isToday ? 'text-[#f53003]' : 'text-[#1b1b18] dark:text-[#EDEDEC]'}`}>{day.getDate()}</p>
+                                            <p style={{ fontSize:11, fontWeight:600, color:isWeekend?'#c0c0bc':'#9ca3af', fontFamily:'system-ui,sans-serif' }}>{JOURS[day.getDay()]}</p>
+                                            <p style={{ fontSize:17, fontWeight:800, color:isToday?'#f53003':'#1a1a18', lineHeight:1.2 }}>{day.getDate()}</p>
                                         </div>
-                                        {dayTournees.length > 0 && (
-                                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f5f5f3] text-xs font-medium text-[#706f6c] dark:bg-[#1C1C1A]">
-                                                {dayTournees.length}
-                                            </span>
-                                        )}
+                                        {dayT.length>0 && <span style={{ width:20, height:20, borderRadius:'50%', background:'#f5f5f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#706f6c' }}>{dayT.length}</span>}
                                     </div>
-                                    <div className="space-y-1.5">
-                                        {dayTournees.length === 0 ? (
-                                            <button onClick={() => { setShowNewTournee(true); setNewForm(p => ({ ...p, date: iso })); }}
-                                                className="flex w-full items-center justify-center rounded-lg border border-dashed border-[#e3e3e0] py-3 text-[#A1A09A] hover:border-[#f53003] hover:text-[#f53003] dark:border-[#3E3E3A]">
-                                                <SvgIcon path="M12 5V19M5 12H19" className="h-3.5 w-3.5"/>
+                                    <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                                        {dayT.length===0 ? (
+                                            <button onClick={()=>{ setShowNew(true); setNewForm(p=>({...p,date:iso})); }}
+                                                style={{ width:'100%', padding:'10px 0', borderRadius:10, border:'1.5px dashed #e5e7eb', background:'transparent', cursor:'pointer', color:'#c0c0bc', fontSize:18, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s' }}
+                                                onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.borderColor='#f53003'; (e.currentTarget as HTMLElement).style.color='#f53003'; }}
+                                                onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.borderColor='#e5e7eb'; (e.currentTarget as HTMLElement).style.color='#c0c0bc'; }}>
+                                                +
                                             </button>
-                                        ) : (
-                                            <>
-                                                {dayTournees.map(t => (
-                                                    <button key={t.id} onClick={() => ouvrirTournee(t)}
-                                                        className="w-full rounded-lg border border-[#e3e3e0] bg-[#fafaf9] p-2 text-left hover:border-[#f53003] hover:bg-white dark:border-[#3E3E3A] dark:bg-[#1C1C1A] dark:hover:bg-[#161615]">
-                                                        <div className="mb-0.5 flex items-center gap-1.5">
-                                                            <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${dot[t.statut]}`}/>
-                                                            <p className="truncate text-xs font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{t.service.nom}</p>
+                                        ) : (<>
+                                            {dayT.map(t=>{
+                                                const sc = STATUT_CFG[t.statut];
+                                                const dotColor = t.statut==='planifiee'?'#3b82f6':t.statut==='en_cours'?'#f97316':t.statut==='terminee'?'#10b981':'#9ca3af';
+                                                const pct = t.patients_total>0?(t.patients_vus/t.patients_total)*100:0;
+                                                return (
+                                                    <button key={t.id} onClick={()=>ouvrirTournee(t)}
+                                                        style={{ width:'100%', padding:'8px 10px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', textAlign:'left', transition:'all 0.15s' }}
+                                                        onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.borderColor='#f53003'; (e.currentTarget as HTMLElement).style.background='#fff'; }}
+                                                        onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.borderColor='#f0f0ee'; (e.currentTarget as HTMLElement).style.background='#fafaf9'; }}>
+                                                        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
+                                                            <div style={{ width:6, height:6, borderRadius:2, background:dotColor, flexShrink:0 }}/>
+                                                            <p style={{ fontSize:11, fontWeight:700, color:'#1a1a18', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{t.service.nom}</p>
                                                         </div>
-                                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{t.heure_debut_prevue} · {t.soignant.name.split(' ')[0]}</p>
-                                                        <div className="mt-1.5 h-1 rounded-full bg-[#e3e3e0] dark:bg-[#3E3E3A]">
-                                                            <div className={`h-full rounded-full ${t.statut === 'terminee' ? 'bg-green-400' : 'bg-[#f53003]'}`}
-                                                                style={{ width: `${t.patients_total > 0 ? (t.patients_vus / t.patients_total) * 100 : 0}%` }}/>
+                                                        <p style={{ fontSize:10, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginBottom:5 }}>{t.heure_debut_prevue} · {t.soignant.name.split(' ')[0]}</p>
+                                                        <div style={{ height:3, borderRadius:100, background:'#f0f0ee', overflow:'hidden' }}>
+                                                            <div style={{ height:'100%', width:`${pct}%`, background:t.statut==='terminee'?'#10b981':'#f53003', borderRadius:100 }}/>
                                                         </div>
                                                     </button>
-                                                ))}
-                                                <button onClick={() => { setShowNewTournee(true); setNewForm(p => ({ ...p, date: iso })); }}
-                                                    className="flex w-full items-center justify-center gap-1 rounded-lg py-1 text-xs text-[#A1A09A] hover:text-[#f53003]">
-                                                    <SvgIcon path="M12 5V19M5 12H19" className="h-3 w-3"/> Ajouter
-                                                </button>
-                                            </>
-                                        )}
+                                                );
+                                            })}
+                                            <button onClick={()=>{ setShowNew(true); setNewForm(p=>({...p,date:iso})); }} style={{ width:'100%', padding:'4px 0', border:'none', background:'transparent', cursor:'pointer', fontSize:11, color:'#c0c0bc', fontFamily:'system-ui,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}
+                                                onMouseEnter={e=>(e.currentTarget as HTMLElement).style.color='#f53003'}
+                                                onMouseLeave={e=>(e.currentTarget as HTMLElement).style.color='#c0c0bc'}>
+                                                + Ajouter
+                                            </button>
+                                        </>)}
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
 
-                    <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginTop:16 }}>
                         {[
-                            { label: 'Tournées planifiées cette semaine', value: Object.values(tourneesByDay).flat().length,                       color: 'text-blue-600 dark:text-blue-400',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                            { label: 'Jours avec tournées',               value: Object.values(tourneesByDay).filter(v => v.length > 0).length,   color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-                            { label: 'Jours sans tournée',                value: Object.values(tourneesByDay).filter(v => v.length === 0).length,  color: 'text-gray-600 dark:text-gray-400',   bg: 'bg-gray-50 dark:bg-gray-900/20' },
-                        ].map(({ label, value, color, bg }) => (
-                            <div key={label} className={`rounded-xl border border-[#e3e3e0] ${bg} p-4 dark:border-[#3E3E3A]`}>
-                                <p className={`text-2xl font-semibold ${color}`}>{value}</p>
-                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{label}</p>
+                            { label:'Tournées planifiées cette semaine', value:Object.values(tourneesByDay).flat().length,                       color:'#2563eb', bg:'#eff6ff', border:'#bfdbfe' },
+                            { label:'Jours avec tournées',               value:Object.values(tourneesByDay).filter(v=>v.length>0).length,        color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' },
+                            { label:'Jours sans tournée',                value:Object.values(tourneesByDay).filter(v=>v.length===0).length,       color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb' },
+                        ].map(({label,value,color,bg,border})=>(
+                            <div key={label} style={{ borderRadius:14, background:bg, border:`1px solid ${border}`, padding:'14px 18px' }}>
+                                <p style={{ fontSize:26, fontWeight:800, color, letterSpacing:'-0.5px', lineHeight:1, marginBottom:4 }}>{value}</p>
+                                <p style={{ fontSize:12, color, opacity:0.8, fontFamily:'system-ui,sans-serif' }}>{label}</p>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* VUE — Aujourd'hui + Historique                           */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {activeTab !== 'planning' && (
-                <div className="grid gap-4">
-                    {tournees.length === 0 ? (
-                        <div className="rounded-xl border border-[#e3e3e0] bg-white py-16 text-center dark:border-[#3E3E3A] dark:bg-[#161615]">
-                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Aucune tournée pour ces filtres.</p>
+            {/* ══════════════════════════════════════ VUE LISTE */}
+            {activeTab!=='planning' && (
+                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                    {tournees.length===0 ? (
+                        <div style={{ borderRadius:20, border:'1px solid #eee', background:'#fff', padding:'48px', textAlign:'center', color:'#c0c0bc', fontSize:14, fontFamily:'system-ui,sans-serif' }}>
+                            <div style={{ fontSize:36, marginBottom:8 }}>🚑</div>
+                            Aucune tournée pour ces filtres.
                         </div>
-                    ) : tournees.map(tournee => {
-                        const cfg = statutConfig[tournee.statut];
+                    ) : tournees.map(t=>{
+                        const sc  = STATUT_CFG[t.statut];
+                        const pct = t.patients_total>0?(t.patients_vus/t.patients_total)*100:0;
+                        const barColor = t.statut==='terminee'?'#10b981':t.statut==='en_cours'?'#f97316':'#3b82f6';
                         return (
-                            <div key={tournee.id} className="overflow-hidden rounded-xl border border-[#e3e3e0] bg-white dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                <div className="flex flex-wrap items-center justify-between gap-4 p-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${cfg.icon}`}>
-                                            <SvgIcon path="M6 19C4 21 2 19 2 16V12C2 10 4 8 6 8C8 8 10 9 12 12C12 14 14 18 18 20C20 21 22 19 22 16V12C22 10 20 8 18 8C16 8 14 9 12 12M12 4V12" className="h-6 w-6"/>
-                                        </div>
+                            <div key={t.id} style={{ borderRadius:20, overflow:'hidden', border:'1px solid #eee', background:'#fff', boxShadow:'0 2px 12px rgba(0,0,0,0.04)' }}>
+                                <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:16, padding:'16px 20px' }}>
+                                    {/* Infos gauche */}
+                                    <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                                        <div style={{ width:48, height:48, borderRadius:14, background:sc.bg, border:`1.5px solid ${sc.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>🚑</div>
                                         <div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <h3 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{tournee.service.nom}</h3>
-                                                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${cfg.badge}`}>{cfg.label}</span>
-                                                {tournee.vehicule && (
-                                                    <span className="rounded-full border border-[#e3e3e0] px-2 py-0.5 text-xs text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]">
-                                                        🚗 {tournee.vehicule}
-                                                    </span>
-                                                )}
-                                                {tournee.recurrence && tournee.recurrence !== 'unique' && (
-                                                    <span className="flex items-center gap-1 rounded-full border border-[#e3e3e0] px-2 py-0.5 text-xs text-[#706f6c] dark:border-[#3E3E3A] dark:text-[#A1A09A]">
-                                                        <SvgIcon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" className="h-3 w-3"/>
-                                                        {tournee.recurrence === 'quotidienne' ? 'Quotidienne' : tournee.recurrence === 'hebdomadaire' ? 'Hebdo' : 'Personnalisée'}
-                                                    </span>
-                                                )}
-                                                {(tournee.frequence_journaliere ?? 1) > 1 && (
-                                                    <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">
-                                                        {tournee.frequence_journaliere}×/jour
-                                                    </span>
-                                                )}
+                                            <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
+                                                <h3 style={{ fontSize:15, fontWeight:700, color:'#1a1a18' }}>{t.service.nom}</h3>
+                                                <Badge label={sc.label} cfg={sc}/>
+                                                {t.vehicule && <span style={{ fontSize:11, color:'#9ca3af', background:'#fafaf9', border:'1px solid #f0f0ee', borderRadius:100, padding:'2px 8px' }}>🚗 {t.vehicule}</span>}
+                                                {t.recurrence && t.recurrence!=='unique' && <span style={{ fontSize:11, color:'#9ca3af', background:'#fafaf9', border:'1px solid #f0f0ee', borderRadius:100, padding:'2px 8px' }}>🔄 {t.recurrence==='quotidienne'?'Quotidienne':t.recurrence==='hebdomadaire'?'Hebdo':'Personnalisée'}</span>}
+                                                {(t.frequence_journaliere??1)>1 && <span style={{ fontSize:11, fontWeight:700, color:'#7c3aed', background:'#f5f3ff', border:'1px solid #ddd6fe', borderRadius:100, padding:'2px 8px' }}>{t.frequence_journaliere}×/jour</span>}
                                             </div>
-                                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                {tournee.soignant.name} · {tournee.service.etage}
-                                                {tournee.jours_actifs && tournee.jours_actifs.length > 0 && (
-                                                    <span className="ml-2">{[...tournee.jours_actifs].sort().map(j => JOURS[j]).join(' · ')}</span>
-                                                )}
+                                            <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>
+                                                {t.soignant.name} · {t.service.etage}
+                                                {t.jours_actifs&&t.jours_actifs.length>0 && <span style={{ marginLeft:8 }}>{[...t.jours_actifs].sort().map(j=>JOURS[j]).join(' · ')}</span>}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-6">
-                                        <div className="text-center">
-                                            <p className="text-2xl font-semibold tabular-nums text-[#1b1b18] dark:text-[#EDEDEC]">{tournee.patients_vus}/{tournee.patients_total}</p>
-                                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">Patients vus</p>
+                                    {/* Métriques droite */}
+                                    <div style={{ display:'flex', alignItems:'center', gap:20 }}>
+                                        <div style={{ textAlign:'center' }}>
+                                            <div style={{ fontSize:22, fontWeight:800, color:'#1a1a18', letterSpacing:'-0.5px', lineHeight:1 }}>{t.patients_vus}<span style={{ fontSize:14, fontWeight:500, color:'#9ca3af' }}>/{t.patients_total}</span></div>
+                                            <div style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>Patients vus</div>
                                         </div>
-                                        <div className="text-center">
-                                            <p className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{tournee.heure_debut_prevue}</p>
-                                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                {tournee.heure_fin_effective ? `→ ${tournee.heure_fin_effective}` : tournee.heure_debut_effective ? 'En cours' : 'Prévu'}
-                                            </p>
+                                        <div style={{ textAlign:'center' }}>
+                                            <div style={{ fontSize:14, fontWeight:700, color:'#1a1a18' }}>{t.heure_debut_prevue}</div>
+                                            <div style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:1 }}>{t.heure_fin_effective?`→ ${t.heure_fin_effective}`:t.heure_debut_effective?'En cours':'Prévu'}</div>
                                         </div>
-                                        {tournee.kilometres && (
-                                            <div className="text-center">
-                                                <p className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{tournee.kilometres} km</p>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">Parcourus</p>
+                                        {t.kilometres && (
+                                            <div style={{ textAlign:'center' }}>
+                                                <div style={{ fontSize:14, fontWeight:700, color:'#1a1a18' }}>{t.kilometres} km</div>
+                                                <div style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:1 }}>Parcourus</div>
                                             </div>
                                         )}
-                                        <button onClick={() => ouvrirTournee(tournee)}
-                                            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${cfg.btn}`}>
-                                            {cfg.btnText}
+                                        <button onClick={()=>ouvrirTournee(t)}
+                                            style={{ height:36, padding:'0 18px', borderRadius:10, border: t.statut==='terminee'||t.statut==='annulee'?'1.5px solid #f0f0ee':'none', background:t.statut==='terminee'||t.statut==='annulee'?'#fafaf9':sc.btnGrad, color:t.statut==='terminee'||t.statut==='annulee'?'#706f6c':'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:t.statut==='planifiee'?'0 4px 14px rgba(245,48,3,0.25)':t.statut==='en_cours'?'0 4px 14px rgba(249,115,22,0.25)':'none', transition:'transform 0.15s' }}
+                                            onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform='translateY(-1px)'}
+                                            onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform='none'}>
+                                            {t.statut==='planifiee'?'Démarrer':t.statut==='en_cours'?'Continuer':'Voir'}
                                         </button>
                                     </div>
                                 </div>
-                                <div className="h-1 w-full bg-[#e3e3e0] dark:bg-[#3E3E3A]">
-                                    <div className={`h-full transition-all ${tournee.statut === 'terminee' ? 'bg-green-500' : tournee.statut === 'en_cours' ? 'bg-orange-500' : 'bg-blue-400'}`}
-                                        style={{ width: `${tournee.patients_total > 0 ? (tournee.patients_vus / tournee.patients_total) * 100 : 0}%` }}/>
+                                {/* Barre de progression */}
+                                <div style={{ height:3, background:'#f5f5f3' }}>
+                                    <div style={{ height:'100%', width:`${pct}%`, background:barColor, transition:'width 0.5s' }}/>
                                 </div>
                             </div>
                         );
@@ -510,304 +344,298 @@ export default function Tournees({
                 </div>
             )}
 
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* MODAL — Nouvelle tournée                                 */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {showNewTournee && (
-                <Modal title="Planifier une tournée" subtitle="Programmation et récurrence" onClose={() => setShowNewTournee(false)} size="xl">
-                    <form onSubmit={submitNewTournee} className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <Field label="Soignant *">
-                                <select value={newForm.soignant_id} onChange={e => setNewForm(p => ({ ...p, soignant_id: e.target.value }))} required className={inputCls}>
-                                    <option value="">Sélectionner…</option>
-                                    {soignants.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </select>
-                            </Field>
-                            <Field label="Service *">
-                                <select value={newForm.service_id} onChange={e => setNewForm(p => ({ ...p, service_id: e.target.value }))} required className={inputCls}>
-                                    <option value="">Sélectionner…</option>
-                                    {services.map(s => <option key={s.id} value={s.id}>{s.nom} ({s.patients_actuels} patients)</option>)}
-                                </select>
-                            </Field>
+            {/* ══════════════════════════════════════ MODAL NOUVELLE TOURNÉE */}
+            {showNew && (
+                <div style={{ position:'fixed', inset:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'rgba(10,10,8,0.6)', backdropFilter:'blur(10px)' }}>
+                    <div style={{ width:'100%', maxWidth:740, borderRadius:24, background:'#fff', boxShadow:'0 32px 80px rgba(0,0,0,0.2)', maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+                        <div style={{ padding:'18px 24px 14px', borderBottom:'1px solid #f0f0ee', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                                <div style={{ width:40, height:40, borderRadius:12, background:'linear-gradient(135deg,#f53003,#ff8c6a)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🚑</div>
+                                <div>
+                                    <h2 style={{ fontSize:16, fontWeight:700, color:'#1a1a18' }}>Planifier une tournée</h2>
+                                    <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>Programmation et récurrence</p>
+                                </div>
+                            </div>
+                            <button onClick={()=>setShowNew(false)} style={{ width:30, height:30, borderRadius:8, border:'1px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
                         </div>
 
-                        {/* Section récurrence */}
-                        <div className="rounded-xl border border-[#e3e3e0] p-4 dark:border-[#3E3E3A]">
-                            <div className="mb-3 flex items-center gap-2">
-                                <SvgIcon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" className="h-4 w-4 text-[#f53003]"/>
-                                <h4 className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Récurrence</h4>
-                            </div>
-                            <div className="mb-4 grid grid-cols-4 gap-2">
-                                {recurrenceOptions.map(({ value, label, desc, icon }) => (
-                                    <button key={value} type="button" onClick={() => setNewForm(p => ({ ...p, recurrence: value }))}
-                                        className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition-colors ${newForm.recurrence === value ? 'border-[#f53003] bg-[#fff2f2] dark:bg-[#1D0002]' : 'border-[#e3e3e0] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:hover:bg-[#1C1C1A]'}`}>
-                                        <SvgIcon path={icon} className={`h-4 w-4 ${newForm.recurrence === value ? 'text-[#f53003]' : 'text-[#706f6c]'}`}/>
-                                        <span className={`text-xs font-medium ${newForm.recurrence === value ? 'text-[#f53003]' : 'text-[#1b1b18] dark:text-[#EDEDEC]'}`}>{label}</span>
-                                        <span className="text-[10px] leading-tight text-[#706f6c] dark:text-[#A1A09A]">{desc}</span>
-                                    </button>
-                                ))}
+                        <form onSubmit={submitNew} style={{ overflowY:'auto', flex:1, padding:'18px 24px', display:'flex', flexDirection:'column', gap:18 }}>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                                <FL label="Soignant *">
+                                    <select value={newForm.soignant_id} onChange={e=>setNewForm(p=>({...p,soignant_id:e.target.value}))} required style={iSx} onFocus={fIn} onBlur={fOut}>
+                                        <option value="">Sélectionner…</option>
+                                        {soignants.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                                    </select>
+                                </FL>
+                                <FL label="Service *">
+                                    <select value={newForm.service_id} onChange={e=>setNewForm(p=>({...p,service_id:e.target.value}))} required style={iSx} onFocus={fIn} onBlur={fOut}>
+                                        <option value="">Sélectionner…</option>
+                                        {services.map(s=><option key={s.id} value={s.id}>{s.nom} ({s.patients_actuels} patients)</option>)}
+                                    </select>
+                                </FL>
                             </div>
 
-                            {(newForm.recurrence === 'hebdomadaire' || newForm.recurrence === 'personnalisee') && (
-                                <div className="mb-4">
-                                    <p className="mb-2 text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">Jours actifs</p>
-                                    <div className="flex gap-2">
-                                        {JOURS.map((j, idx) => (
-                                            <button key={idx} type="button" onClick={() => toggleJour(idx)}
-                                                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors ${newForm.jours_actifs.includes(idx) ? 'bg-[#f53003] text-white' : 'border border-[#e3e3e0] text-[#706f6c] hover:border-[#f53003] hover:text-[#f53003] dark:border-[#3E3E3A]'}`}>
-                                                {j}
+                            {/* Récurrence */}
+                            <div style={{ borderRadius:16, border:'1.5px solid #f0f0ee', padding:'14px 16px' }}>
+                                <p style={{ fontSize:12, fontWeight:700, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:12 }}>🔄 Récurrence</p>
+                                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:14 }}>
+                                    {recurrenceOpts.map(({value,label,desc})=>{
+                                        const active=newForm.recurrence===value;
+                                        return (
+                                            <button key={value} type="button" onClick={()=>setNewForm(p=>({...p,recurrence:value}))}
+                                                style={{ padding:'10px 8px', borderRadius:12, border:`1.5px solid ${active?'#f53003':'#f0f0ee'}`, background:active?'#fff5f5':'#fafaf9', cursor:'pointer', textAlign:'center', transition:'all 0.15s' }}>
+                                                <p style={{ fontSize:12, fontWeight:700, color:active?'#f53003':'#374151', fontFamily:'system-ui,sans-serif' }}>{label}</p>
+                                                <p style={{ fontSize:10, color:active?'#f53003':'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:3, opacity:0.8 }}>{desc}</p>
                                             </button>
-                                        ))}
+                                        );
+                                    })}
+                                </div>
+
+                                {(newForm.recurrence==='hebdomadaire'||newForm.recurrence==='personnalisee') && (
+                                    <div style={{ marginBottom:12 }}>
+                                        <p style={{ fontSize:11, fontWeight:600, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'system-ui,sans-serif', marginBottom:8 }}>Jours actifs</p>
+                                        <div style={{ display:'flex', gap:8 }}>
+                                            {JOURS.map((j,idx)=>{
+                                                const active=newForm.jours_actifs.includes(idx);
+                                                return (
+                                                    <button key={idx} type="button" onClick={()=>toggleJour(idx)}
+                                                        style={{ width:36, height:36, borderRadius:'50%', border:`1.5px solid ${active?'#f53003':'#f0f0ee'}`, background:active?'#f53003':'#fafaf9', color:active?'#fff':'#9ca3af', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', flexShrink:0 }}>
+                                                        {j}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {newForm.jours_actifs.length===0 && <p style={{ marginTop:6, fontSize:11, color:'#ef4444', fontFamily:'system-ui,sans-serif' }}>Sélectionnez au moins un jour.</p>}
                                     </div>
-                                    {newForm.jours_actifs.length === 0 && <p className="mt-1.5 text-xs text-red-500">Sélectionnez au moins un jour.</p>}
+                                )}
+
+                                <div style={{ marginBottom:12 }}>
+                                    <p style={{ fontSize:11, fontWeight:600, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'system-ui,sans-serif', marginBottom:8 }}>Fréquence journalière</p>
+                                    <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                                        {([1,2,3] as Frequence[]).map(f=>{
+                                            const active=newForm.frequence_journaliere===f;
+                                            return (
+                                                <button key={f} type="button" onClick={()=>setNewForm(p=>({...p,frequence_journaliere:f}))}
+                                                    style={{ height:34, padding:'0 14px', borderRadius:9, border:`1.5px solid ${active?'#f53003':'#f0f0ee'}`, background:active?'#fff5f5':'#fafaf9', color:active?'#f53003':'#9ca3af', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>
+                                                    {f}×
+                                                </button>
+                                            );
+                                        })}
+                                        <span style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>tournée{newForm.frequence_journaliere>1?'s':''}/jour</span>
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="mb-4">
-                                <p className="mb-2 text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">Fréquence journalière</p>
-                                <div className="flex gap-2">
-                                    {([1, 2, 3] as Frequence[]).map(f => (
-                                        <button key={f} type="button" onClick={() => setNewForm(p => ({ ...p, frequence_journaliere: f }))}
-                                            className={`flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${newForm.frequence_journaliere === f ? 'border-[#f53003] bg-[#fff2f2] text-[#f53003] dark:bg-[#1D0002]' : 'border-[#e3e3e0] text-[#706f6c] hover:border-[#f53003] dark:border-[#3E3E3A]'}`}>
-                                            {f}×
-                                        </button>
-                                    ))}
-                                    <span className="flex items-center text-xs text-[#A1A09A]">tournée{newForm.frequence_journaliere > 1 ? 's' : ''} par jour</span>
+                                {newForm.recurrence!=='unique' && (
+                                    <FL label="Date de fin de récurrence">
+                                        <input type="date" value={newForm.date_fin_recurrence} onChange={e=>setNewForm(p=>({...p,date_fin_recurrence:e.target.value}))} min={newForm.date} style={iSx} onFocus={fIn} onBlur={fOut}/>
+                                    </FL>
+                                )}
+
+                                <div style={{ marginTop:12, borderRadius:10, background:'#fafaf9', padding:'10px 12px', display:'flex', gap:8, alignItems:'flex-start' }}>
+                                    <span style={{ fontSize:14, flexShrink:0 }}>ℹ️</span>
+                                    <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>{recurrenceSummary}</p>
                                 </div>
                             </div>
 
-                            {newForm.recurrence !== 'unique' && (
-                                <Field label="Date de fin de récurrence">
-                                    <input type="date" value={newForm.date_fin_recurrence}
-                                        onChange={e => setNewForm(p => ({ ...p, date_fin_recurrence: e.target.value }))}
-                                        min={newForm.date} className={inputCls}/>
-                                </Field>
-                            )}
-
-                            <div className="mt-3 flex items-start gap-2 rounded-lg bg-[#f5f5f3] px-3 py-2.5 dark:bg-[#1C1C1A]">
-                                <SvgIcon path="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#f53003]"/>
-                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{recurrenceSummary}</p>
-                            </div>
-                        </div>
-
-                        {/* Horaires */}
-                        <div className="rounded-xl border border-[#e3e3e0] p-4 dark:border-[#3E3E3A]">
-                            <div className="mb-3 flex items-center gap-2">
-                                <SvgIcon path="M12 8V12L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" className="h-4 w-4 text-[#f53003]"/>
-                                <h4 className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Horaires</h4>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                <Field label="Date de début *">
-                                    <input type="date" value={newForm.date} onChange={e => setNewForm(p => ({ ...p, date: e.target.value }))} required className={inputCls}/>
-                                </Field>
-                                <Field label="1ère tournée *">
-                                    <input type="time" value={newForm.heure_debut_prevue} onChange={e => setNewForm(p => ({ ...p, heure_debut_prevue: e.target.value }))} required className={inputCls}/>
-                                </Field>
-                                <Field label="Heure fin prévue">
-                                    <input type="time" value={newForm.heure_fin_prevue} onChange={e => setNewForm(p => ({ ...p, heure_fin_prevue: e.target.value }))} className={inputCls}/>
-                                </Field>
-                            </div>
-                            {newForm.frequence_journaliere >= 2 && (
-                                <div className="mt-3 grid grid-cols-3 gap-4">
-                                    <Field label="2e tournée">
-                                        <input type="time" value={newForm.heure_debut_2} onChange={e => setNewForm(p => ({ ...p, heure_debut_2: e.target.value }))} className={inputCls}/>
-                                    </Field>
-                                    {newForm.frequence_journaliere >= 3 && (
-                                        <Field label="3e tournée">
-                                            <input type="time" value={newForm.heure_debut_3} onChange={e => setNewForm(p => ({ ...p, heure_debut_3: e.target.value }))} className={inputCls}/>
-                                        </Field>
-                                    )}
+                            {/* Horaires */}
+                            <div style={{ borderRadius:16, border:'1.5px solid #f0f0ee', padding:'14px 16px' }}>
+                                <p style={{ fontSize:12, fontWeight:700, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:12 }}>🕐 Horaires</p>
+                                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+                                    <FL label="Date de début *"><input type="date" value={newForm.date} onChange={e=>setNewForm(p=>({...p,date:e.target.value}))} required style={iSx} onFocus={fIn} onBlur={fOut}/></FL>
+                                    <FL label="1ère tournée *"><input type="time" value={newForm.heure_debut_prevue} onChange={e=>setNewForm(p=>({...p,heure_debut_prevue:e.target.value}))} required style={iSx} onFocus={fIn} onBlur={fOut}/></FL>
+                                    <FL label="Fin prévue"><input type="time" value={newForm.heure_fin_prevue} onChange={e=>setNewForm(p=>({...p,heure_fin_prevue:e.target.value}))} style={iSx} onFocus={fIn} onBlur={fOut}/></FL>
                                 </div>
-                            )}
-                        </div>
+                                {newForm.frequence_journaliere>=2 && (
+                                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginTop:12 }}>
+                                        <FL label="2e tournée"><input type="time" value={newForm.heure_debut_2} onChange={e=>setNewForm(p=>({...p,heure_debut_2:e.target.value}))} style={iSx} onFocus={fIn} onBlur={fOut}/></FL>
+                                        {newForm.frequence_journaliere>=3 && <FL label="3e tournée"><input type="time" value={newForm.heure_debut_3} onChange={e=>setNewForm(p=>({...p,heure_debut_3:e.target.value}))} style={iSx} onFocus={fIn} onBlur={fOut}/></FL>}
+                                    </div>
+                                )}
+                            </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <Field label="Véhicule (HAD)">
-                                <input type="text" value={newForm.vehicule} onChange={e => setNewForm(p => ({ ...p, vehicule: e.target.value }))} placeholder="ex : AA 123 CM" className={inputCls}/>
-                            </Field>
-                            <Field label="Type de tournée">
-                                <select value={newForm.type} onChange={e => setNewForm(p => ({ ...p, type: e.target.value as TypeTournee }))} className={inputCls}>
-                                    <option value="complete">Visite complète</option>
-                                    <option value="cas_critiques">Cas critiques</option>
-                                    <option value="chambre_specifique">Chambre spécifique</option>
-                                </select>
-                            </Field>
-                        </div>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                                <FL label="Véhicule (HAD)"><input type="text" value={newForm.vehicule} onChange={e=>setNewForm(p=>({...p,vehicule:e.target.value}))} placeholder="ex : AA 123 CM" style={iSx} onFocus={fIn} onBlur={fOut}/></FL>
+                                <FL label="Type de tournée">
+                                    <select value={newForm.type} onChange={e=>setNewForm(p=>({...p,type:e.target.value as TypeTournee}))} style={iSx} onFocus={fIn} onBlur={fOut}>
+                                        <option value="complete">Visite complète</option>
+                                        <option value="cas_critiques">Cas critiques</option>
+                                        <option value="chambre_specifique">Chambre spécifique</option>
+                                    </select>
+                                </FL>
+                            </div>
 
-                        <Field label="Notes">
-                            <textarea value={newForm.notes} onChange={e => setNewForm(p => ({ ...p, notes: e.target.value }))} rows={2}
-                                placeholder="Instructions particulières, patients prioritaires…"
-                                className={inputCls + ' resize-none'}/>
-                        </Field>
+                            <FL label="Notes">
+                                <textarea value={newForm.notes} onChange={e=>setNewForm(p=>({...p,notes:e.target.value}))} rows={2} placeholder="Instructions particulières, patients prioritaires…"
+                                    style={{ ...iSx, height:'auto', padding:'8px 12px', resize:'vertical' }} onFocus={fIn} onBlur={fOut}/>
+                            </FL>
 
-                        <div className="flex justify-end gap-3 border-t border-[#e3e3e0] pt-4 dark:border-[#3E3E3A]">
-                            <button type="button" onClick={() => setShowNewTournee(false)}
-                                className="rounded-lg border border-[#e3e3e0] px-5 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC]">
-                                Annuler
-                            </button>
-                            <button type="submit"
-                                className="flex items-center gap-2 rounded-lg bg-[#f53003] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03]">
-                                <SvgIcon path="M20 6L9 17L4 12" className="h-4 w-4"/>
-                                Planifier
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
+                            <div style={{ display:'flex', justifyContent:'flex-end', gap:10, paddingTop:8, borderTop:'1px solid #f0f0ee' }}>
+                                <button type="button" onClick={()=>setShowNew(false)} style={{ height:36, padding:'0 16px', borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fff', fontSize:13, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Annuler</button>
+                                <button type="submit" style={{ height:36, padding:'0 18px', borderRadius:9, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(245,48,3,0.25)', display:'flex', alignItems:'center', gap:7 }}>
+                                    ✓ Planifier
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
 
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* MODAL — Déroulement tournée                              */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {selectedTournee && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-                    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-[#161615]">
-                        <div className="flex items-center justify-between border-b border-[#e3e3e0] px-6 py-4 dark:border-[#3E3E3A]">
+            {/* ══════════════════════════════════════ MODAL DÉROULEMENT TOURNÉE */}
+            {selTournee && (
+                <div style={{ position:'fixed', inset:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(10,10,8,0.7)', padding:16 }}>
+                    <div style={{ width:'100%', maxWidth:960, borderRadius:24, background:'#fff', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+
+                        {/* Header modal tournée */}
+                        <div style={{ padding:'16px 22px', borderBottom:'1px solid #f0f0ee', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
                             <div>
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-lg font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Tournée — {selectedTournee.service.nom}</h2>
-                                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statutConfig[selectedTournee.statut].badge}`}>{statutConfig[selectedTournee.statut].label}</span>
+                                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+                                    <h2 style={{ fontSize:16, fontWeight:700, color:'#1a1a18' }}>Tournée — {selTournee.service.nom}</h2>
+                                    <Badge label={STATUT_CFG[selTournee.statut].label} cfg={STATUT_CFG[selTournee.statut]}/>
                                 </div>
-                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                    {selectedTournee.soignant.name} · {selectedTournee.date} à {selectedTournee.heure_debut_prevue}
-                                    {selectedTournee.vehicule && ` · 🚗 ${selectedTournee.vehicule}`}
+                                <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>
+                                    {selTournee.soignant.name} · {selTournee.date} à {selTournee.heure_debut_prevue}
+                                    {selTournee.vehicule && ` · 🚗 ${selTournee.vehicule}`}
                                 </p>
                             </div>
-                            <button onClick={() => { setSelectedTournee(null); setSelectedVisite(null); }} className="rounded-lg p-2 text-[#706f6c] hover:bg-[#f5f5f3] dark:hover:bg-[#1C1C1A]">
-                                <SvgIcon path="M18 6L6 18M6 6L18 18" className="h-5 w-5"/>
+                            <button onClick={()=>{ setSelTournee(null); setSelVisite(null); }} style={{ width:30, height:30, borderRadius:8, border:'1px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                         </div>
 
-                        <div className="flex min-h-0 flex-1">
+                        <div style={{ display:'flex', minHeight:0, flex:1 }}>
                             {/* Colonne patients */}
-                            <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-[#e3e3e0] dark:border-[#3E3E3A]">
-                                <div className="sticky top-0 z-10 border-b border-[#e3e3e0] bg-white px-4 py-3 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Patients ({selectedTournee.patients_vus}/{selectedTournee.patients_total})</span>
-                                        <div className="h-2 w-24 overflow-hidden rounded-full bg-[#e3e3e0] dark:bg-[#3E3E3A]">
-                                            <div className="h-full rounded-full bg-[#f53003]"
-                                                style={{ width: `${selectedTournee.patients_total > 0 ? (selectedTournee.patients_vus / selectedTournee.patients_total) * 100 : 0}%` }}/>
+                            <div style={{ width:280, flexShrink:0, overflowY:'auto', borderRight:'1px solid #f0f0ee' }}>
+                                <div style={{ position:'sticky', top:0, zIndex:10, borderBottom:'1px solid #f0f0ee', background:'#fff', padding:'12px 16px' }}>
+                                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                        <span style={{ fontSize:13, fontWeight:700, color:'#1a1a18' }}>Patients ({selTournee.patients_vus}/{selTournee.patients_total})</span>
+                                        <div style={{ width:80, height:5, borderRadius:100, background:'#f0f0ee', overflow:'hidden' }}>
+                                            <div style={{ height:'100%', width:`${selTournee.patients_total>0?(selTournee.patients_vus/selTournee.patients_total)*100:0}%`, background:'#f53003', borderRadius:100, transition:'width 0.5s' }}/>
                                         </div>
                                     </div>
                                 </div>
-                                {[...selectedTournee.visite_hads].sort((a, b) => a.ordre - b.ordre).map(visite => (
-                                    <button key={visite.id} onClick={() => ouvrirVisite(visite)}
-                                        className={`w-full border-b border-[#e3e3e0] p-4 text-left transition-colors hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:hover:bg-[#1C1C1A] ${selectedVisite?.id === visite.id ? 'bg-[#f5f5f3] dark:bg-[#1C1C1A]' : ''}`}>
-                                        <div className="flex items-start gap-3">
-                                            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-medium ${visite.patient.sexe === 'M' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                                                {visite.patient.prenom[0]}{visite.patient.nom[0]}
+                                {[...selTournee.visite_hads].sort((a,b)=>a.ordre-b.ordre).map(v=>(
+                                    <button key={v.id} onClick={()=>ouvrirVisite(v)}
+                                        style={{ width:'100%', borderBottom:'1px solid #f5f5f3', padding:'12px 16px', textAlign:'left', background:selVisite?.id===v.id?'#fafaf9':'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                        onMouseEnter={e=>{ if(selVisite?.id!==v.id)(e.currentTarget as HTMLElement).style.background='#fafaf9'; }}
+                                        onMouseLeave={e=>{ if(selVisite?.id!==v.id)(e.currentTarget as HTMLElement).style.background='transparent'; }}>
+                                        <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                                            <div style={{ width:36, height:36, borderRadius:10, background:v.patient.sexe==='M'?'linear-gradient(135deg,#3b82f6,#2563eb)':'linear-gradient(135deg,#ec4899,#db2777)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'#fff', flexShrink:0 }}>
+                                                {v.patient.prenom[0]}{v.patient.nom[0]}
                                             </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="truncate text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{visite.patient.prenom} {visite.patient.nom}</p>
-                                                    {visite.visite_at && <SvgIcon path="M22 11.08V12C21.999 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999M22 4L12 14.01L9 11.01" className="h-4 w-4 flex-shrink-0 text-green-500"/>}
+                                            <div style={{ flex:1, minWidth:0 }}>
+                                                <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:2 }}>
+                                                    <p style={{ fontSize:13, fontWeight:600, color:'#1a1a18', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{v.patient.prenom} {v.patient.nom}</p>
+                                                    {v.visite_at && <span style={{ fontSize:14 }}>✅</span>}
                                                 </div>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">Ch. {visite.chambre} – Lit {visite.lit}</p>
-                                                <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${prioriteConfig[visite.priorite]}`}>{prioriteLabel[visite.priorite]}</span>
+                                                <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>Ch.{v.chambre} – Lit {v.lit}</p>
+                                                <Badge label={PRIO_LABEL[v.priorite]} cfg={PRIO_CFG[v.priorite]}/>
                                             </div>
                                         </div>
                                     </button>
                                 ))}
                             </div>
 
-                            {/* Détail patient */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                {selectedVisite ? (
+                            {/* Détail visite */}
+                            <div style={{ flex:1, overflowY:'auto', padding:'20px 22px' }}>
+                                {selVisite ? (
                                     <>
-                                        <div className="mb-6 flex items-start justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`flex h-16 w-16 items-center justify-center rounded-full text-xl font-semibold ${selectedVisite.patient.sexe === 'M' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'}`}>
-                                                    {selectedVisite.patient.prenom[0]}{selectedVisite.patient.nom[0]}
+                                        {/* Patient header */}
+                                        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:20 }}>
+                                            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                                                <div style={{ width:56, height:56, borderRadius:16, background:selVisite.patient.sexe==='M'?'linear-gradient(135deg,#3b82f6,#2563eb)':'linear-gradient(135deg,#ec4899,#db2777)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:'#fff' }}>
+                                                    {selVisite.patient.prenom[0]}{selVisite.patient.nom[0]}
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-xl font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{selectedVisite.patient.prenom} {selectedVisite.patient.nom}</h3>
-                                                    <p className="text-sm text-[#706f6c]">{selectedVisite.patient.age} ans · {selectedVisite.patient.sexe === 'M' ? 'Homme' : 'Femme'}</p>
-                                                    <p className="text-sm text-[#706f6c]">Chambre {selectedVisite.chambre} – Lit {selectedVisite.lit} · J{selectedVisite.jours_hospitalisation}</p>
+                                                    <h3 style={{ fontSize:18, fontWeight:800, color:'#1a1a18', letterSpacing:'-0.3px' }}>{selVisite.patient.prenom} {selVisite.patient.nom}</h3>
+                                                    <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:3 }}>{selVisite.patient.age} ans · {selVisite.patient.sexe==='M'?'Homme':'Femme'} · Chambre {selVisite.chambre} – Lit {selVisite.lit} · J{selVisite.jours_hospitalisation}</p>
                                                 </div>
                                             </div>
-                                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${prioriteConfig[selectedVisite.priorite]}`}>{prioriteLabel[selectedVisite.priorite]}</span>
+                                            <Badge label={PRIO_LABEL[selVisite.priorite]} cfg={PRIO_CFG[selVisite.priorite]}/>
                                         </div>
 
-                                        <div className="mb-6 rounded-lg bg-[#f5f5f3] p-4 dark:bg-[#1C1C1A]">
-                                            <p className="text-xs font-medium uppercase text-[#706f6c]">Diagnostic</p>
-                                            <p className="mt-1 text-lg font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{selectedVisite.diagnostic}</p>
+                                        {/* Diagnostic */}
+                                        <div style={{ borderRadius:12, background:'#fafaf9', padding:'12px 14px', marginBottom:18 }}>
+                                            <p style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'system-ui,sans-serif', marginBottom:5 }}>Diagnostic</p>
+                                            <p style={{ fontSize:15, fontWeight:700, color:'#1a1a18' }}>{selVisite.diagnostic}</p>
                                         </div>
 
-                                        <div className="mb-6">
-                                            <h4 className="mb-3 text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Constantes vitales</h4>
-                                            <div className="grid grid-cols-4 gap-3">
-                                                {([
-                                                    { label: 'Température', field: 'temperature' as const, icon: 'M14 14.76V3.5C14 2.67157 13.3284 2 12.5 2V2C11.6716 2 11 2.67157 11 3.5V14.76C9.79401 15.3134 9 16.5289 9 17.9C9 19.8882 10.5118 21.4 12.5 21.4C14.4882 21.4 16 19.8882 16 17.9C16 16.5289 15.206 15.3134 14 14.76Z', color: 'text-red-500',    ph: '36.5'   },
-                                                    { label: 'Tension',     field: 'tension'     as const, icon: 'M20.84 4.61C19.79 3.57 18.37 3 16.95 3C15.53 3 14.1 3.57 13.06 4.61L12 5.67L10.94 4.61C8.78 2.44 5.28 2.44 3.12 4.61C0.96 6.78 0.96 10.27 3.12 12.43L12 21.23L20.88 12.43C23.04 10.27 23.04 6.78 20.84 4.61Z', color: 'text-pink-500',   ph: '120/80' },
-                                                    { label: 'Pouls',      field: 'pouls'       as const, icon: 'M22 12H18L15 21L9 3L6 12H2',                                                                                                                                                                                                                     color: 'text-orange-500', ph: '72'     },
-                                                    { label: 'SpO2',       field: 'saturation'  as const, icon: 'M12 4V12M12 12C12 14 10 18 6 20C4 21 2 19 2 16V12C2 10 4 8 6 8C8 8 10 9 12 12ZM12 12C12 14 14 18 18 20C20 21 22 19 22 16V12C22 10 20 8 18 8C16 8 14 9 12 12Z',                                                                              color: 'text-blue-500',   ph: '98%'    },
-                                                ]).map(({ label, field, icon, color, ph }) => (
-                                                    <div key={field} className="rounded-lg border border-[#e3e3e0] p-3 dark:border-[#3E3E3A]">
-                                                        <div className="mb-1 flex items-center gap-1.5">
-                                                            <SvgIcon path={icon} className={`h-4 w-4 ${color}`}/>
-                                                            <span className="text-xs text-[#706f6c]">{label}</span>
+                                        {/* Constantes vitales */}
+                                        <div style={{ marginBottom:18 }}>
+                                            <p style={{ fontSize:12, fontWeight:700, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:10 }}>Constantes vitales</p>
+                                            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+                                                {[
+                                                    { label:'Température', field:'temperature' as const, icon:'🌡️', color:'#ef4444', ph:'36.5' },
+                                                    { label:'Tension',     field:'tension'     as const, icon:'❤️', color:'#ec4899', ph:'120/80' },
+                                                    { label:'Pouls',       field:'pouls'       as const, icon:'💓', color:'#f97316', ph:'72' },
+                                                    { label:'SpO2',        field:'saturation'  as const, icon:'💨', color:'#3b82f6', ph:'98%' },
+                                                ].map(({label,field,icon,color,ph})=>(
+                                                    <div key={field} style={{ borderRadius:12, border:'1.5px solid #f0f0ee', padding:'12px 14px' }}>
+                                                        <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:6 }}>
+                                                            <span style={{ fontSize:14 }}>{icon}</span>
+                                                            <span style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>{label}</span>
                                                         </div>
-                                                        <input type="text" value={observationForm[field]}
-                                                            onChange={e => setObservationForm(p => ({ ...p, [field]: e.target.value }))}
-                                                            placeholder={ph}
-                                                            className="w-full border-0 bg-transparent p-0 text-lg font-semibold text-[#1b1b18] focus:outline-none dark:text-[#EDEDEC]"/>
+                                                        <input type="text" value={obsForm[field]} onChange={e=>setObsForm(p=>({...p,[field]:e.target.value}))} placeholder={ph}
+                                                            style={{ width:'100%', border:'none', background:'transparent', fontSize:18, fontWeight:800, color, outline:'none', fontFamily:'system-ui,sans-serif' }}/>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {selectedVisite.observations && (
-                                            <div className="mb-6">
-                                                <h4 className="mb-2 text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Dernière observation</h4>
-                                                <div className="rounded-lg border border-[#e3e3e0] p-4 dark:border-[#3E3E3A]">
-                                                    <p className="text-sm text-[#1b1b18] dark:text-[#EDEDEC]">{selectedVisite.observations}</p>
-                                                    {selectedVisite.visite_at && <p className="mt-1 text-xs text-[#706f6c]">{selectedVisite.visite_at}</p>}
-                                                </div>
+                                        {/* Dernière observation */}
+                                        {selVisite.observations && (
+                                            <div style={{ marginBottom:16, borderRadius:12, background:'#fafaf9', border:'1px solid #f0f0ee', padding:'12px 14px' }}>
+                                                <p style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Dernière observation</p>
+                                                <p style={{ fontSize:13, color:'#1a1a18', lineHeight:1.6 }}>{selVisite.observations}</p>
+                                                {selVisite.visite_at && <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:6 }}>{selVisite.visite_at}</p>}
                                             </div>
                                         )}
 
-                                        <div className="mb-6">
-                                            <h4 className="mb-2 text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Observations de cette visite</h4>
-                                            <textarea value={observationForm.observations}
-                                                onChange={e => setObservationForm(p => ({ ...p, observations: e.target.value }))}
-                                                rows={4} placeholder="Saisissez vos observations…"
-                                                className={inputCls + ' resize-none'}/>
+                                        {/* Saisie observations */}
+                                        <div style={{ marginBottom:18 }}>
+                                            <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:8 }}>Observations de cette visite</label>
+                                            <textarea value={obsForm.observations} onChange={e=>setObsForm(p=>({...p,observations:e.target.value}))} rows={4} placeholder="Saisissez vos observations…"
+                                                style={{ ...iSx, height:'auto', padding:'10px 12px', resize:'vertical' }} onFocus={fIn} onBlur={fOut}/>
                                         </div>
 
-                                        <div className="flex items-center gap-3">
-                                            <Link href={`/patients/${selectedVisite.patient_id}/prescriptions/create`}
-                                                className="flex items-center gap-2 rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-                                                <SvgIcon path="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5C15 6.10457 14.1046 7 13 7H11C9.89543 7 9 6.10457 9 5ZM9 12H15M9 16H13" className="h-4 w-4"/> Prescrire
-                                            </Link>
-                                            <Link href={`/patients/${selectedVisite.patient_id}/examens/create`}
-                                                className="flex items-center gap-2 rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-                                                <SvgIcon path="M9 3H15M10 3V8L5 18C4.5 19 5.2 20 6.5 20H17.5C18.8 20 19.5 19 19 18L14 8V3" className="h-4 w-4"/> Examens
-                                            </Link>
-                                            <button onClick={validerVisite} disabled={!!selectedVisite.visite_at}
-                                                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#f53003] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03] disabled:opacity-50">
-                                                <SvgIcon path="M20 6L9 17L4 12" className="h-4 w-4"/>
-                                                {selectedVisite.visite_at ? 'Visite validée' : 'Valider la visite'}
+                                        {/* Boutons action */}
+                                        <div style={{ display:'flex', gap:8 }}>
+                                            {[
+                                                { href:`/prescription?patient_id=${selVisite.patient_id}`, label:'💊 Prescrire', color:'#059669', bg:'#f0fdf4', border:'#bbf7d0' },
+                                                { href:`/laboratoire?patient_id=${selVisite.patient_id}`,  label:'🧪 Labo',      color:'#0284c7', bg:'#f0f9ff', border:'#bae6fd' },
+                                                { href:`/imagerie?patient_id=${selVisite.patient_id}`,     label:'🩻 Imagerie',  color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' },
+                                            ].map(btn=>(
+                                                <Link key={btn.href} href={btn.href}
+                                                    style={{ height:34, padding:'0 12px', borderRadius:9, border:`1.5px solid ${btn.border}`, background:btn.bg, fontSize:12, fontWeight:700, color:btn.color, textDecoration:'none', display:'flex', alignItems:'center', fontFamily:'system-ui,sans-serif' }}>
+                                                    {btn.label}
+                                                </Link>
+                                            ))}
+                                            <button onClick={validerVisite} disabled={!!selVisite.visite_at}
+                                                style={{ flex:1, height:36, borderRadius:9, background:selVisite.visite_at?'#f5f5f3':'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:selVisite.visite_at?'#9ca3af':'#fff', fontSize:13, fontWeight:700, cursor:selVisite.visite_at?'not-allowed':'pointer', fontFamily:'system-ui,sans-serif', boxShadow:selVisite.visite_at?'none':'0 4px 14px rgba(245,48,3,0.25)', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                                                {selVisite.visite_at ? '✅ Visite validée' : '✓ Valider la visite'}
                                             </button>
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="flex h-full items-center justify-center">
-                                        <p className="text-sm text-[#706f6c]">Sélectionnez un patient pour voir ses détails</p>
+                                    <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'#c0c0bc', fontSize:14, fontFamily:'system-ui,sans-serif' }}>
+                                        Sélectionnez un patient pour voir ses détails
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between border-t border-[#e3e3e0] bg-[#fafaf9] px-6 py-4 dark:border-[#3E3E3A] dark:bg-[#0a0a0a]">
-                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Progression : {selectedTournee.patients_vus}/{selectedTournee.patients_total} patients</p>
-                            <div className="flex items-center gap-3">
-                                {selectedTournee.statut === 'en_cours' && (
-                                    <button onClick={suspendre} className="rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-                                        Suspendre
-                                    </button>
+                        {/* Footer modal tournée */}
+                        <div style={{ padding:'12px 22px', borderTop:'1px solid #f0f0ee', background:'#fafaf9', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+                            <p style={{ fontSize:13, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>Progression : <strong style={{ color:'#1a1a18' }}>{selTournee.patients_vus}/{selTournee.patients_total}</strong> patients</p>
+                            <div style={{ display:'flex', gap:10 }}>
+                                {selTournee.statut==='en_cours' && (
+                                    <button onClick={suspendre} style={{ height:36, padding:'0 16px', borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fff', fontSize:13, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Suspendre</button>
                                 )}
-                                {selectedTournee.statut !== 'terminee' && selectedTournee.statut !== 'annulee' && (
-                                    <button onClick={terminer} className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700">
-                                        <SvgIcon path="M20 6L9 17L4 12" className="h-4 w-4"/> Terminer la tournée
+                                {selTournee.statut!=='terminee' && selTournee.statut!=='annulee' && (
+                                    <button onClick={terminer}
+                                        style={{ height:36, padding:'0 16px', borderRadius:9, background:'linear-gradient(135deg,#059669,#16a34a)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(22,163,74,0.25)', display:'flex', alignItems:'center', gap:7 }}>
+                                        ✓ Terminer la tournée
                                     </button>
                                 )}
                             </div>
@@ -815,73 +643,7 @@ export default function Tournees({
                     </div>
                 </div>
             )}
+
         </DashboardLayout>
-    );
-}
-
-// ─── UI helpers ───────────────────────────────────────────────────────────────
-
-const inputCls  = "w-full rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]";
-const selectCls = "rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm text-[#1b1b18] focus:border-[#f53003] focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]";
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{label}</label>
-            {children}
-        </div>
-    );
-}
-
-function Modal({ title, subtitle, children, onClose, size = 'md' }: {
-    title: string; subtitle?: string; children: React.ReactNode; onClose: () => void; size?: 'md' | 'lg' | 'xl';
-}) {
-    const sizeMap = { md: 'max-w-md', lg: 'max-w-2xl', xl: 'max-w-3xl' };
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className={`max-h-[90vh] w-full overflow-y-auto rounded-xl bg-white shadow-2xl dark:bg-[#161615] ${sizeMap[size]}`}>
-                <div className="flex items-start justify-between border-b border-[#e3e3e0] p-6 dark:border-[#3E3E3A]">
-                    <div>
-                        <h2 className="text-lg font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{title}</h2>
-                        {subtitle && <p className="mt-0.5 text-sm text-[#706f6c] dark:text-[#A1A09A]">{subtitle}</p>}
-                    </div>
-                    <button onClick={onClose} className="ml-4 rounded-lg p-1 text-[#706f6c] hover:bg-[#f5f5f3] dark:hover:bg-[#3E3E3A]">
-                        <SvgIcon path="M18 6L6 18M6 6L18 18" className="h-5 w-5"/>
-                    </button>
-                </div>
-                <div className="p-6">{children}</div>
-            </div>
-        </div>
-    );
-}
-
-function StatCard({ title, value, color, icon }: { title: string; value: number; color: string; icon: string }) {
-    const colorMap: Record<string, string> = {
-        blue:   'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400',
-        orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400',
-        green:  'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400',
-        purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400',
-        teal:   'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400',
-    };
-    return (
-        <div className="rounded-xl border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-            <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${colorMap[color]}`}>
-                    <SvgIcon path={icon} className="h-5 w-5"/>
-                </div>
-                <div>
-                    <p className="text-2xl font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{value}</p>
-                    <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">{title}</p>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function SvgIcon({ path, className }: { path: string; className?: string }) {
-    return (
-        <svg className={className ?? 'h-5 w-5'} viewBox="0 0 24 24" fill="none">
-            <path d={path} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
     );
 }

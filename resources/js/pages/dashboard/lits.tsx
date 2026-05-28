@@ -4,660 +4,466 @@ import DashboardLayout from './layout';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface Occupation {
-  id: number;
-  patient: string | null;
-  diagnostic: string | null;
-  date_entree: string | null;
-}
+interface Occupation { id: number; patient: string | null; diagnostic: string | null; date_entree: string | null; }
+interface Lit { id: number; numero: string; chambre: string | null; type: string; statut: 'disponible'|'occupe'|'nettoyage'|'horsservice'; occupation: Occupation | null; }
+interface Service { id: number; nom: string; etage: string; capacite: number; occupes: number; disponibles: number; enNettoyage: number; horsService: number; lits: Lit[]; }
+interface Props { services: Service[]; }
 
-interface Lit {
-  id: number;
-  numero: string;
-  chambre: string | null;
-  type: string;
-  statut: 'disponible' | 'occupe' | 'nettoyage' | 'horsservice';
-  occupation: Occupation | null;
-}
+// ─── Statut config ────────────────────────────────────────────────────────────
 
-interface Service {
-  id: number;
-  nom: string;
-  etage: string;
-  capacite: number;
-  occupes: number;
-  disponibles: number;
-  enNettoyage: number;
-  horsService: number;
-  lits: Lit[];
-}
-
-interface Props {
-  services: Service[];
-}
-
-// ─── Config statuts ───────────────────────────────────────────────────────────
-
-const statutConfig = {
-  disponible:  { bg: 'bg-green-50 dark:bg-green-900/20',   border: 'border-green-200 dark:border-green-900/50',  text: 'text-green-700 dark:text-green-400',  dot: 'bg-green-500',  label: 'Disponible'   },
-  occupe:      { bg: 'bg-red-50 dark:bg-red-900/20',       border: 'border-red-200 dark:border-red-900/50',      text: 'text-red-700 dark:text-red-400',      dot: 'bg-red-500',    label: 'Occupé'       },
-  nettoyage:   { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-900/50',text: 'text-yellow-700 dark:text-yellow-400', dot: 'bg-yellow-500', label: 'Nettoyage'    },
-  horsservice: { bg: 'bg-gray-50 dark:bg-gray-800',        border: 'border-gray-200 dark:border-gray-700',       text: 'text-gray-500 dark:text-gray-400',    dot: 'bg-gray-400',   label: 'Hors service' },
+const SC = {
+    disponible:  { color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', dot: '#22c55e', label: 'Disponible',   grad: 'linear-gradient(135deg,#f0fdf4,#dcfce7)' },
+    occupe:      { color: '#dc2626', bg: '#fef2f2', border: '#fecaca', dot: '#ef4444', label: 'Occupé',       grad: 'linear-gradient(135deg,#fef2f2,#fee2e2)' },
+    nettoyage:   { color: '#d97706', bg: '#fffbeb', border: '#fde68a', dot: '#f59e0b', label: 'Nettoyage',    grad: 'linear-gradient(135deg,#fffbeb,#fef3c7)' },
+    horsservice: { color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', dot: '#9ca3af', label: 'Hors service', grad: 'linear-gradient(135deg,#f9fafb,#f3f4f6)' },
 } as const;
 
-type Statut = keyof typeof statutConfig;
+type Statut = keyof typeof SC;
 
-// ─── Helpers — mise à jour locale sans rechargement ───────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Recalcule les compteurs d'un service depuis ses lits. */
-function recalculer(s: Service): Service {
-  return {
-    ...s,
-    capacite:    s.lits.length,
-    occupes:     s.lits.filter(l => l.statut === 'occupe').length,
-    disponibles: s.lits.filter(l => l.statut === 'disponible').length,
-    enNettoyage: s.lits.filter(l => l.statut === 'nettoyage').length,
-    horsService: s.lits.filter(l => l.statut === 'horsservice').length,
-  };
+function recalc(s: Service): Service {
+    return { ...s, capacite: s.lits.length, occupes: s.lits.filter(l=>l.statut==='occupe').length, disponibles: s.lits.filter(l=>l.statut==='disponible').length, enNettoyage: s.lits.filter(l=>l.statut==='nettoyage').length, horsService: s.lits.filter(l=>l.statut==='horsservice').length };
+}
+function changeStatut(services: Service[], svcId: number, litId: number, st: Statut, clearOcc = false): Service[] {
+    return services.map(s => { if (s.id !== svcId) return s; const lits = s.lits.map(l => l.id !== litId ? l : { ...l, statut: st, occupation: clearOcc ? null : l.occupation }); return recalc({ ...s, lits }); });
+}
+function moveLit(services: Service[], srcId: number, litId: number, dstId: number): Service[] {
+    let ref: Lit | null = null;
+    const after = services.map(s => { if (s.id !== srcId) return s; const lits = s.lits.filter(l => { if (l.id===litId){ref=l;return false;} return true; }); return recalc({...s,lits}); });
+    if (!ref) return services;
+    return after.map(s => { if (s.id !== dstId) return s; return recalc({...s,lits:[...s.lits,{...ref!,statut:'disponible',occupation:null}]}); });
 }
 
-/** Change le statut d'un lit et recalcule les compteurs du service. */
-function changerStatut(
-  services: Service[],
-  serviceId: number,
-  litId: number,
-  nouveauStatut: Statut,
-  effacerOccupation = false,
-): Service[] {
-  return services.map(s => {
-    if (s.id !== serviceId) return s;
-    const lits = s.lits.map(l =>
-      l.id !== litId ? l : { ...l, statut: nouveauStatut, occupation: effacerOccupation ? null : l.occupation }
+// ─── Inputs inline helpers ────────────────────────────────────────────────────
+
+const inputStyle: React.CSSProperties = { width:'100%', height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', boxSizing:'border-box' };
+const focusIn  = (e: React.FocusEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>) => { e.currentTarget.style.borderColor='#f53003'; e.currentTarget.style.background='#fff'; };
+const focusOut = (e: React.FocusEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>) => { e.currentTarget.style.borderColor='#f0f0ee'; e.currentTarget.style.background='#fafaf9'; };
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function LitsIndex({ services: init }: Props) {
+    const { flash } = usePage<{ flash?: { success?:string; error?:string } }>().props;
+    const [services,          setServices]          = useState(init);
+    const [toast,             setToast]             = useState<{ok:boolean;msg:string}|null>(null);
+    const [showAddService,    setShowAddService]    = useState(false);
+    const [showAddLit,        setShowAddLit]        = useState<number|null>(null);
+    const [showNettoyage,     setShowNettoyage]     = useState<{serviceId:number;lit:Lit}|null>(null);
+    const [showDisponible,    setShowDisponible]    = useState<{serviceId:number;lit:Lit}|null>(null);
+    const [showHorsService,   setShowHorsService]   = useState<{serviceId:number;lit:Lit}|null>(null);
+    const [showTransferer,    setShowTransferer]    = useState<{serviceId:number;lit:Lit}|null>(null);
+    const [showOccupation,    setShowOccupation]    = useState<{serviceId:number;lit:Lit}|null>(null);
+    const [newService,        setNewService]        = useState({ nom:'', etage:'', code:'', description:'' });
+    const [newLit,            setNewLit]            = useState({ numero:'', chambre:'', type:'standard', statut:'disponible', tarif_journalier:'' });
+    const [transferSvcId,     setTransferSvcId]     = useState<number|''>('');
+    const [horsRaison,        setHorsRaison]        = useState('');
+    const [loading,           setLoading]           = useState(false);
+
+    useEffect(() => { setServices(init); }, [init]);
+
+    const toast$ = (ok:boolean, msg:string) => { setToast({ok,msg}); setTimeout(()=>setToast(null),3500); };
+
+    const totalCap   = services.reduce((a,s)=>a+s.capacite,0);
+    const totalOcc   = services.reduce((a,s)=>a+s.occupes,0);
+    const totalDispo = services.reduce((a,s)=>a+s.disponibles,0);
+    const totalNett  = services.reduce((a,s)=>a+s.enNettoyage,0);
+    const taux       = totalCap > 0 ? Math.round((totalOcc/totalCap)*100) : 0;
+
+    // ── Soumissions ─────────────────────────────────────────────────────
+
+    const submitService = (e: React.FormEvent) => {
+        e.preventDefault(); setLoading(true);
+        router.post('/lits/services', newService, { preserveScroll:true, onSuccess: page => { const fresh=(page.props as any).services as Service[]; const last=fresh.at(-1); if(last) setServices(p=>[...p,last]); setShowAddService(false); setNewService({nom:'',etage:'',code:'',description:''}); toast$(true,`Service «${newService.nom}» créé.`); }, onError:()=>toast$(false,'Erreur lors de la création.'), onFinish:()=>setLoading(false) });
+    };
+    const submitLit = (e: React.FormEvent) => {
+        e.preventDefault(); if(!showAddLit) return; const sid=showAddLit; setLoading(true);
+        router.post('/lits', {...newLit, service_id:sid}, { preserveScroll:true, onSuccess: page => { const fresh=(page.props as any).services as Service[]; const sf=fresh.find(s=>s.id===sid); if(sf) setServices(p=>p.map(s=>s.id===sid?sf:s)); setShowAddLit(null); setNewLit({numero:'',chambre:'',type:'standard',statut:'disponible',tarif_journalier:''}); toast$(true,`Lit «${newLit.numero}» ajouté.`); }, onError:()=>toast$(false,'Numéro déjà utilisé ou données invalides.'), onFinish:()=>setLoading(false) });
+    };
+    const submitNettoyage = () => {
+        if(!showNettoyage) return; const {serviceId,lit}=showNettoyage; const snap=services;
+        setServices(p=>changeStatut(p,serviceId,lit.id,'nettoyage',true)); setShowNettoyage(null); toast$(true,`Lit ${lit.numero} → nettoyage.`);
+        router.post(`/lits/${lit.id}/nettoyage`,{},{preserveScroll:true,onError:()=>{setServices(snap);toast$(false,'Erreur. Annulé.');}});
+    };
+    const submitDisponible = () => {
+        if(!showDisponible) return; const {serviceId,lit}=showDisponible; const snap=services;
+        setServices(p=>changeStatut(p,serviceId,lit.id,'disponible')); setShowDisponible(null); toast$(true,`Lit ${lit.numero} → disponible.`);
+        router.post(`/lits/${lit.id}/disponible`,{},{preserveScroll:true,onError:()=>{setServices(snap);toast$(false,'Erreur. Annulé.');}});
+    };
+    const submitHorsService = () => {
+        if(!showHorsService) return; const {serviceId,lit}=showHorsService; const snap=services; const r=horsRaison;
+        setServices(p=>changeStatut(p,serviceId,lit.id,'horsservice')); setShowHorsService(null); setHorsRaison(''); toast$(true,`Lit ${lit.numero} → hors service.`);
+        router.post(`/lits/${lit.id}/hors-service`,{raison:r},{preserveScroll:true,onError:()=>{setServices(snap);toast$(false,'Erreur. Annulé.');}});
+    };
+    const submitTransferer = (e: React.FormEvent) => {
+        e.preventDefault(); if(!showTransferer||transferSvcId==='') return; const {serviceId,lit}=showTransferer; const dstId=transferSvcId as number; const dstNom=services.find(s=>s.id===dstId)?.nom??'service'; const snap=services;
+        setServices(p=>moveLit(p,serviceId,lit.id,dstId)); setShowTransferer(null); setTransferSvcId(''); toast$(true,`Lit ${lit.numero} → ${dstNom}.`);
+        router.post(`/lits/${lit.id}/transferer`,{service_destination_id:dstId},{preserveScroll:true,onError:()=>{setServices(snap);toast$(false,'Erreur. Transfert annulé.');}});
+    };
+
+    return (
+        <DashboardLayout title="Lits & Occupation" subtitle="Gestion des lits et taux d'occupation par service">
+
+            {/* Toast */}
+            {(toast||flash?.success||flash?.error) && (
+                <div style={{ marginBottom:16, display:'flex', alignItems:'center', gap:10, borderRadius:14, padding:'12px 16px', fontSize:13, fontFamily:'system-ui,sans-serif', background: (!toast?.ok||flash?.error) ? '#fef2f2' : '#f0fdf4', border: `1px solid ${(!toast?.ok||flash?.error)?'#fecaca':'#bbf7d0'}`, color: (!toast?.ok||flash?.error)?'#dc2626':'#16a34a' }}>
+                    <span style={{ fontSize:16 }}>{(!toast?.ok||flash?.error)?'⚠️':'✅'}</span>
+                    {toast?.msg ?? flash?.success ?? flash?.error}
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════ KPI */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:14, marginBottom:24 }}>
+                {[
+                    { label:'Capacité totale', value:`${totalCap} lits`, icon:'🏥', grad:'linear-gradient(135deg,#1a1a18,#2d2d2a)', shadow:'rgba(0,0,0,0.25)' },
+                    { label:'Occupés',         value:totalOcc,           icon:'🛏️', grad:'linear-gradient(135deg,#991b1b,#ef4444)', shadow:'rgba(239,68,68,0.35)' },
+                    { label:'Disponibles',     value:totalDispo,         icon:'✅', grad:'linear-gradient(135deg,#065f46,#10b981)', shadow:'rgba(16,185,129,0.35)' },
+                    { label:'En nettoyage',    value:totalNett,          icon:'🧹', grad:'linear-gradient(135deg,#b45309,#f59e0b)', shadow:'rgba(245,158,11,0.35)' },
+                    { label:'Taux occupation', value:`${taux}%`,         icon:'📊', grad: taux>=90?'linear-gradient(135deg,#991b1b,#ef4444)':taux>=70?'linear-gradient(135deg,#b45309,#f59e0b)':'linear-gradient(135deg,#065f46,#10b981)', shadow:'rgba(59,130,246,0.3)' },
+                ].map((k,i)=>(
+                    <div key={i} style={{ borderRadius:18, padding:'20px', background:k.grad, color:'#fff', position:'relative', overflow:'hidden', boxShadow:`0 8px 24px ${k.shadow}` }}>
+                        <div style={{ position:'absolute', top:-14, right:-14, width:70, height:70, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }}/>
+                        <div style={{ fontSize:22, marginBottom:8 }}>{k.icon}</div>
+                        <div style={{ fontSize:26, fontWeight:800, letterSpacing:'-0.5px', lineHeight:1 }}>{k.value}</div>
+                        <div style={{ fontSize:11, fontWeight:500, opacity:0.8, marginTop:4, fontFamily:'system-ui,sans-serif' }}>{k.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Légende + Actions */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, marginBottom:20, flexWrap:'wrap' }}>
+                {/* Légende */}
+                <div style={{ display:'flex', alignItems:'center', gap:16, background:'#fff', border:'1px solid #eee', borderRadius:14, padding:'10px 18px', flexWrap:'wrap' }}>
+                    <span style={{ fontSize:12, fontWeight:600, color:'#9ca3af', fontFamily:'system-ui,sans-serif', textTransform:'uppercase', letterSpacing:'0.05em' }}>Légende</span>
+                    {Object.entries(SC).map(([k,cfg])=>(
+                        <div key={k} style={{ display:'flex', alignItems:'center', gap:6 }}>
+                            <div style={{ width:10, height:10, borderRadius:3, background:cfg.dot }}/>
+                            <span style={{ fontSize:12, color:'#374151', fontFamily:'system-ui,sans-serif' }}>{cfg.label}</span>
+                        </div>
+                    ))}
+                </div>
+                {/* Actions */}
+                <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={()=>setShowAddService(true)}
+                        style={{ display:'flex', alignItems:'center', gap:7, height:38, padding:'0 16px', borderRadius:10, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(245,48,3,0.3)' }}>
+                        <svg style={{width:14,height:14}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v14M5 12h14"/></svg>
+                        Nouveau service
+                    </button>
+                    {[{href:'/lits/occupations',icon:'👥',label:'Occupations'},{href:'/lits/historique',icon:'🕐',label:'Historique'}].map(btn=>(
+                        <Link key={btn.href} href={btn.href}
+                            style={{ display:'flex', alignItems:'center', gap:7, height:38, padding:'0 14px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, fontWeight:600, color:'#374151', textDecoration:'none', fontFamily:'system-ui,sans-serif', transition:'all 0.15s' }}
+                            onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor='#f53003';(e.currentTarget as HTMLElement).style.background='#fff5f5';}}
+                            onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor='#f0f0ee';(e.currentTarget as HTMLElement).style.background='#fafaf9';}}>
+                            {btn.icon} {btn.label}
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            {/* ══════════════════════════════════════ GRILLE SERVICES */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
+                {services.map(service=>(
+                    <ServiceCard key={service.id} service={service}
+                        onAddLit={()=>setShowAddLit(service.id)}
+                        onNettoyage={lit=>setShowNettoyage({serviceId:service.id,lit})}
+                        onDisponible={lit=>setShowDisponible({serviceId:service.id,lit})}
+                        onHorsService={lit=>setShowHorsService({serviceId:service.id,lit})}
+                        onTransferer={lit=>setShowTransferer({serviceId:service.id,lit})}
+                        onVoirOccupation={lit=>setShowOccupation({serviceId:service.id,lit})}/>
+                ))}
+            </div>
+
+            {/* ══════════════════════════════════════ MODALS */}
+
+            {/* Nouveau service */}
+            {showAddService && (
+                <MModal title="Nouveau service" subtitle="Ajoutez un nouveau service hospitalier" onClose={()=>setShowAddService(false)}>
+                    <form onSubmit={submitService} style={{display:'flex',flexDirection:'column',gap:14}}>
+                        <MField label="Nom du service *"><input value={newService.nom} onChange={e=>setNewService(p=>({...p,nom:e.target.value}))} placeholder="ex : Réanimation…" required style={inputStyle} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <MField label="Code"><input value={newService.code} onChange={e=>setNewService(p=>({...p,code:e.target.value}))} placeholder="ex : CARD, PNEUMO…" style={inputStyle} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <MField label="Étage / Localisation *"><input value={newService.etage} onChange={e=>setNewService(p=>({...p,etage:e.target.value}))} placeholder="ex : 2ème étage…" required style={inputStyle} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <MField label="Description"><textarea value={newService.description} onChange={e=>setNewService(p=>({...p,description:e.target.value}))} rows={2} placeholder="Description optionnelle…" style={{...inputStyle,height:'auto',padding:'8px 12px',resize:'vertical'}} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <MFooter onCancel={()=>setShowAddService(false)} label="Créer le service" loading={loading}/>
+                    </form>
+                </MModal>
+            )}
+
+            {/* Ajouter lit */}
+            {showAddLit !== null && (
+                <MModal title="Ajouter un lit" subtitle={services.find(s=>s.id===showAddLit)?.nom} onClose={()=>setShowAddLit(null)}>
+                    <form onSubmit={submitLit} style={{display:'flex',flexDirection:'column',gap:14}}>
+                        <MField label="Numéro du lit *"><input value={newLit.numero} onChange={e=>setNewLit(p=>({...p,numero:e.target.value}))} placeholder="ex : 405A, M12…" required style={inputStyle} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <MField label="Chambre"><input value={newLit.chambre} onChange={e=>setNewLit(p=>({...p,chambre:e.target.value}))} placeholder="ex : Chambre 4…" style={inputStyle} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                            <MField label="Type"><select value={newLit.type} onChange={e=>setNewLit(p=>({...p,type:e.target.value}))} style={inputStyle} onFocus={focusIn} onBlur={focusOut}><option value="standard">Standard</option><option value="vip">VIP</option><option value="reanimation">Réanimation</option><option value="isolement">Isolement</option><option value="maternite">Maternité</option></select></MField>
+                            <MField label="Statut initial"><select value={newLit.statut} onChange={e=>setNewLit(p=>({...p,statut:e.target.value}))} style={inputStyle} onFocus={focusIn} onBlur={focusOut}><option value="disponible">Disponible</option><option value="nettoyage">En nettoyage</option><option value="horsservice">Hors service</option></select></MField>
+                        </div>
+                        <MField label="Tarif journalier (FCFA)"><input type="number" value={newLit.tarif_journalier} onChange={e=>setNewLit(p=>({...p,tarif_journalier:e.target.value}))} placeholder="ex : 15000" style={inputStyle} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <MFooter onCancel={()=>setShowAddLit(null)} label="Ajouter le lit" loading={loading}/>
+                    </form>
+                </MModal>
+            )}
+
+            {/* Nettoyage */}
+            {showNettoyage && (
+                <MModal title="Marquer en nettoyage" onClose={()=>setShowNettoyage(null)} size={400}>
+                    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                        <div style={{borderRadius:12,background:'#fffbeb',border:'1px solid #fde68a',padding:'12px 16px',display:'flex',gap:10,alignItems:'flex-start'}}>
+                            <span style={{fontSize:18}}>🧹</span>
+                            <div style={{fontSize:13,color:'#92400e',fontFamily:'system-ui,sans-serif'}}>
+                                Le lit <strong>{showNettoyage.lit.numero}</strong> passera en nettoyage.
+                                {showNettoyage.lit.occupation?.patient && <span style={{display:'block',marginTop:4}}>Patient <strong>{showNettoyage.lit.occupation.patient}</strong> sera dissocié.</span>}
+                            </div>
+                        </div>
+                        <MFooter onCancel={()=>setShowNettoyage(null)} onConfirm={submitNettoyage} label="Confirmer" color="#d97706"/>
+                    </div>
+                </MModal>
+            )}
+
+            {/* Disponible */}
+            {showDisponible && (
+                <MModal title="Marquer comme disponible" onClose={()=>setShowDisponible(null)} size={400}>
+                    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                        <div style={{borderRadius:12,background:'#f0fdf4',border:'1px solid #bbf7d0',padding:'12px 16px',display:'flex',gap:10,alignItems:'center'}}>
+                            <span style={{fontSize:18}}>✅</span>
+                            <span style={{fontSize:13,color:'#15803d',fontFamily:'system-ui,sans-serif'}}>Confirmer que le lit <strong>{showDisponible.lit.numero}</strong> est prêt ?</span>
+                        </div>
+                        <MFooter onCancel={()=>setShowDisponible(null)} onConfirm={submitDisponible} label="Confirmer" color="#16a34a"/>
+                    </div>
+                </MModal>
+            )}
+
+            {/* Hors service */}
+            {showHorsService && (
+                <MModal title="Mettre hors service" onClose={()=>setShowHorsService(null)} size={400}>
+                    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+                        <div style={{borderRadius:12,background:'#f9fafb',border:'1px solid #e5e7eb',padding:'12px 16px',display:'flex',gap:10,alignItems:'center'}}>
+                            <span style={{fontSize:18}}>⚠️</span>
+                            <span style={{fontSize:13,color:'#374151',fontFamily:'system-ui,sans-serif'}}>Le lit <strong>{showHorsService.lit.numero}</strong> sera mis hors service.</span>
+                        </div>
+                        <MField label="Raison (optionnelle)"><input value={horsRaison} onChange={e=>setHorsRaison(e.target.value)} placeholder="ex : Maintenance…" style={inputStyle} onFocus={focusIn} onBlur={focusOut}/></MField>
+                        <MFooter onCancel={()=>setShowHorsService(null)} onConfirm={submitHorsService} label="Mettre hors service" color="#6b7280"/>
+                    </div>
+                </MModal>
+            )}
+
+            {/* Transférer */}
+            {showTransferer && (
+                <MModal title="Transférer le lit" subtitle={`Lit ${showTransferer.lit.numero}`} onClose={()=>{setShowTransferer(null);setTransferSvcId('');}}>
+                    <form onSubmit={submitTransferer} style={{display:'flex',flexDirection:'column',gap:14}}>
+                        <MField label="Service destination">
+                            <select value={String(transferSvcId)} onChange={e=>setTransferSvcId(e.target.value?Number(e.target.value):'')} required style={inputStyle} onFocus={focusIn} onBlur={focusOut}>
+                                <option value="">Sélectionner un service…</option>
+                                {services.filter(s=>s.id!==showTransferer.serviceId).map(s=>(
+                                    <option key={s.id} value={s.id}>{s.nom} — {s.etage} ({s.disponibles} libres)</option>
+                                ))}
+                            </select>
+                        </MField>
+                        <MFooter onCancel={()=>{setShowTransferer(null);setTransferSvcId('');}} label="Transférer" disabled={transferSvcId===''} color="#2563eb"/>
+                    </form>
+                </MModal>
+            )}
+
+            {/* Occupation */}
+            {showOccupation?.lit.occupation && (
+                <MModal title="Occupation actuelle" subtitle={`Lit ${showOccupation.lit.numero}`} onClose={()=>setShowOccupation(null)} size={480}>
+                    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                            {[['Patient',showOccupation.lit.occupation.patient??'—'],['Diagnostic',showOccupation.lit.occupation.diagnostic??'—'],['Date d\'entrée',showOccupation.lit.occupation.date_entree??'—']].map(([l,v])=>(
+                                <div key={l} style={{background:'#fafaf9',borderRadius:10,padding:'10px 14px'}}>
+                                    <div style={{fontSize:11,color:'#9ca3af',fontFamily:'system-ui,sans-serif',marginBottom:4}}>{l}</div>
+                                    <div style={{fontSize:13,fontWeight:600,color:'#1a1a18'}}>{v}</div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{display:'flex',gap:10,paddingTop:12,borderTop:'1px solid #f0f0ee'}}>
+                            <Link href={`/lits/occupations/${showOccupation.lit.occupation.id}`}
+                                style={{flex:1,display:'block',textAlign:'center',padding:'10px',borderRadius:10,background:'linear-gradient(135deg,#f53003,#e02a00)',color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 14px rgba(245,48,3,0.25)'}}>
+                                Voir le dossier
+                            </Link>
+                            <button onClick={()=>setShowOccupation(null)}
+                                style={{flex:1,height:40,borderRadius:10,border:'1.5px solid #f0f0ee',background:'#fafaf9',fontSize:13,fontWeight:600,color:'#706f6c',cursor:'pointer',fontFamily:'system-ui,sans-serif'}}>
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </MModal>
+            )}
+
+        </DashboardLayout>
     );
-    return recalculer({ ...s, lits });
-  });
-}
-
-/** Déplace un lit d'un service source vers un service destination. */
-function deplacerLit(services: Service[], srcId: number, litId: number, dstId: number): Service[] {
-  let litRef: Lit | null = null;
-
-  const apresRetrait = services.map(s => {
-    if (s.id !== srcId) return s;
-    const lits = s.lits.filter(l => { if (l.id === litId) { litRef = l; return false; } return true; });
-    return recalculer({ ...s, lits });
-  });
-
-  if (!litRef) return services;
-
-  return apresRetrait.map(s => {
-    if (s.id !== dstId) return s;
-    const litReset: Lit = { ...litRef!, statut: 'disponible', occupation: null };
-    return recalculer({ ...s, lits: [...s.lits, litReset] });
-  });
-}
-
-// ─── Composant principal ──────────────────────────────────────────────────────
-
-export default function LitsIndex({ services: initialServices }: Props) {
-  const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
-
-  // État local — mis à jour immédiatement à chaque action
-  const [services, setServices] = useState<Service[]>(initialServices);
-
-  // Re-sync si Inertia re-render la page (navigation retour, etc.)
-  useEffect(() => { setServices(initialServices); }, [initialServices]);
-
-  // ── Toast inline ─────────────────────────────────────────────────────
-  const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null);
-  const showToast = (ok: boolean, msg: string) => {
-    setToast({ ok, msg });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  // ── Modals ───────────────────────────────────────────────────────────
-  const [showAddService,  setShowAddService]  = useState(false);
-  const [showAddLit,      setShowAddLit]      = useState<number | null>(null);
-  const [showNettoyage,   setShowNettoyage]   = useState<{ serviceId: number; lit: Lit } | null>(null);
-  const [showDisponible,  setShowDisponible]  = useState<{ serviceId: number; lit: Lit } | null>(null);
-  const [showHorsService, setShowHorsService] = useState<{ serviceId: number; lit: Lit } | null>(null);
-  const [showTransferer,  setShowTransferer]  = useState<{ serviceId: number; lit: Lit } | null>(null);
-  const [showOccupation,  setShowOccupation]  = useState<{ serviceId: number; lit: Lit } | null>(null);
-
-  // ── Formulaires ──────────────────────────────────────────────────────
-  const [newService,        setNewService]        = useState({ nom: '', etage: '', code: '', description: '' });
-  const [newLit,            setNewLit]            = useState({ numero: '', chambre: '', type: 'standard', statut: 'disponible', tarif_journalier: '' });
-  const [transferServiceId, setTransferServiceId] = useState<number | ''>('');
-  const [horsServiceRaison, setHorsServiceRaison] = useState('');
-  const [loading,           setLoading]           = useState(false);
-
-  // ─────────────────────────────────────────────────────────────────────
-  // SOUMISSIONS — pattern : snapshot → mise à jour locale immédiate → rollback si erreur
-  // ─────────────────────────────────────────────────────────────────────
-
-  const submitService = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    router.post('/lits/services', newService, {
-      preserveScroll: true,
-      onSuccess: page => {
-        const fresh = (page.props as any).services as Service[];
-        const dernier = fresh.at(-1);
-        if (dernier) setServices(prev => [...prev, dernier]);
-        setShowAddService(false);
-        setNewService({ nom: '', etage: '', code: '', description: '' });
-        showToast(true, `Service « ${newService.nom} » créé.`);
-      },
-      onError: () => showToast(false, 'Erreur lors de la création du service.'),
-      onFinish: () => setLoading(false),
-    });
-  };
-
-  const submitLit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showAddLit) return;
-    const serviceId = showAddLit;
-    setLoading(true);
-    router.post('/lits', { ...newLit, service_id: serviceId }, {
-      preserveScroll: true,
-      onSuccess: page => {
-        const fresh = (page.props as any).services as Service[];
-        const serviceFrais = fresh.find(s => s.id === serviceId);
-        if (serviceFrais) setServices(prev => prev.map(s => s.id === serviceId ? serviceFrais : s));
-        setShowAddLit(null);
-        setNewLit({ numero: '', chambre: '', type: 'standard', statut: 'disponible', tarif_journalier: '' });
-        showToast(true, `Lit « ${newLit.numero} » ajouté.`);
-      },
-      onError: () => showToast(false, 'Numéro déjà utilisé ou données invalides.'),
-      onFinish: () => setLoading(false),
-    });
-  };
-
-  const submitNettoyage = () => {
-    if (!showNettoyage) return;
-    const { serviceId, lit } = showNettoyage;
-    const snap = services;
-    // Mise à jour immédiate
-    setServices(prev => changerStatut(prev, serviceId, lit.id, 'nettoyage', true));
-    setShowNettoyage(null);
-    showToast(true, `Lit ${lit.numero} → en nettoyage.`);
-    router.post(`/lits/${lit.id}/nettoyage`, {}, {
-      preserveScroll: true,
-      onError: () => { setServices(snap); showToast(false, 'Erreur. Changement annulé.'); },
-    });
-  };
-
-  const submitDisponible = () => {
-    if (!showDisponible) return;
-    const { serviceId, lit } = showDisponible;
-    const snap = services;
-    setServices(prev => changerStatut(prev, serviceId, lit.id, 'disponible'));
-    setShowDisponible(null);
-    showToast(true, `Lit ${lit.numero} → disponible.`);
-    router.post(`/lits/${lit.id}/disponible`, {}, {
-      preserveScroll: true,
-      onError: () => { setServices(snap); showToast(false, 'Erreur. Changement annulé.'); },
-    });
-  };
-
-  const submitHorsService = () => {
-    if (!showHorsService) return;
-    const { serviceId, lit } = showHorsService;
-    const snap = services;
-    const raison = horsServiceRaison;
-    setServices(prev => changerStatut(prev, serviceId, lit.id, 'horsservice'));
-    setShowHorsService(null);
-    setHorsServiceRaison('');
-    showToast(true, `Lit ${lit.numero} → hors service.`);
-    router.post(`/lits/${lit.id}/hors-service`, { raison }, {
-      preserveScroll: true,
-      onError: () => { setServices(snap); showToast(false, 'Erreur. Changement annulé.'); },
-    });
-  };
-
-  const submitTransferer = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showTransferer || transferServiceId === '') return;
-    const { serviceId, lit } = showTransferer;
-    const dstId = transferServiceId as number;
-    const dstNom = services.find(s => s.id === dstId)?.nom ?? 'service';
-    const snap = services;
-    setServices(prev => deplacerLit(prev, serviceId, lit.id, dstId));
-    setShowTransferer(null);
-    setTransferServiceId('');
-    showToast(true, `Lit ${lit.numero} → ${dstNom}.`);
-    router.post(`/lits/${lit.id}/transferer`, { service_destination_id: dstId }, {
-      preserveScroll: true,
-      onError: () => { setServices(snap); showToast(false, 'Erreur. Transfert annulé.'); },
-    });
-  };
-
-  // ── Stats calculées en temps réel depuis l'état local ────────────────
-  const totalCapacite    = services.reduce((a, s) => a + s.capacite, 0);
-  const totalOccupes     = services.reduce((a, s) => a + s.occupes, 0);
-  const totalDisponibles = services.reduce((a, s) => a + s.disponibles, 0);
-  const totalNettoyage   = services.reduce((a, s) => a + s.enNettoyage, 0);
-  const tauxOccupation   = totalCapacite > 0 ? Math.round((totalOccupes / totalCapacite) * 100) : 0;
-
-  // ─────────────────────────────────────────────────────────────────────
-  // RENDU
-  // ─────────────────────────────────────────────────────────────────────
-
-  return (
-    <DashboardLayout title="Lits & Occupation" subtitle="Gestion des lits et taux d'occupation par service">
-
-      {/* Toast + flash */}
-      {(toast || flash?.success || flash?.error) && (
-        <div className={`mb-4 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-all ${
-          (!toast?.ok || flash?.error)
-            ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
-            : 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400'
-        }`}>
-          {(!toast?.ok || flash?.error)
-            ? <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            : <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3a9 9 0 100 18A9 9 0 0012 3z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          }
-          <span>{toast?.msg ?? flash?.success ?? flash?.error}</span>
-        </div>
-      )}
-
-      {/* Stats globales */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {[
-          { label: 'Capacité totale', value: `${totalCapacite} lits`, icon: 'M19 3H5C3.895 3 3 3.895 3 5V19C3 20.105 3.895 21 5 21H19C20.105 21 21 20.105 21 19V5C21 3.895 20.105 3 19 3ZM3 9H21M9 21V9',
-            col: 'text-[#f53003]', bg: 'bg-[#fff2f2] dark:bg-[#1D0002]', vc: 'text-[#1b1b18] dark:text-[#EDEDEC]' },
-          { label: 'Occupés',         value: totalOccupes,
-            icon: 'M17 21V19C17 16.791 15.209 15 13 15H5C2.791 15 1 16.791 1 19V21M9 11C11.209 11 13 9.209 13 7C13 4.791 11.209 3 9 3C6.791 3 5 4.791 5 7C5 9.209 6.791 11 9 11Z',
-            col: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30', vc: 'text-red-600 dark:text-red-400' },
-          { label: 'Disponibles',     value: totalDisponibles,
-            icon: 'M22 11.08V12C21.999 14.156 21.3 16.255 20.009 17.982C18.718 19.709 16.903 20.972 14.835 21.584C12.767 22.195 10.557 22.122 8.534 21.375C6.512 20.627 4.785 19.246 3.611 17.437C2.437 15.628 1.88 13.488 2.022 11.336C2.164 9.185 2.997 7.136 4.398 5.497C5.799 3.858 7.693 2.715 9.796 2.24C11.9 1.765 14.1 1.982 16.07 2.86M22 4L12 14.01L9 11.01',
-            col: 'text-green-600 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30', vc: 'text-green-600 dark:text-green-400' },
-          { label: 'En nettoyage',    value: totalNettoyage,
-            icon: 'M12 2L2 7L12 12L22 7L12 2ZM2 17L12 22L22 17M2 12L12 17L22 12',
-            col: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-900/30', vc: 'text-yellow-600 dark:text-yellow-400' },
-          { label: 'Taux occupation', value: `${tauxOccupation}%`,
-            icon: 'M18 20V10M12 20V4M6 20V14',
-            col: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30', vc: 'text-blue-600 dark:text-blue-400' },
-        ].map((s, i) => (
-          <div key={i} className="rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-            <div className="flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${s.bg}`}>
-                <svg className={`h-5 w-5 ${s.col}`} viewBox="0 0 24 24" fill="none">
-                  <path d={s.icon} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">{s.label}</p>
-                <p className={`text-xl font-semibold tabular-nums transition-all duration-300 ${s.vc}`}>{s.value}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Légende */}
-      <div className="mb-6 flex flex-wrap items-center gap-6 rounded-lg border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-        <span className="text-sm font-medium text-[#706f6c] dark:text-[#A1A09A]">Légende :</span>
-        {Object.entries(statutConfig).map(([k, cfg]) => (
-          <div key={k} className="flex items-center gap-2">
-            <span className={`h-4 w-4 rounded ${cfg.dot}`}/>
-            <span className="text-sm text-[#1b1b18] dark:text-[#EDEDEC]">{cfg.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Actions rapides */}
-      <div className="mb-6 flex flex-wrap gap-3">
-        <button onClick={() => setShowAddService(true)}
-          className="flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03]">
-          <PlusIcon/> Nouveau service
-        </button>
-        <Link href="/lits/occupations"
-          className="flex items-center gap-2 rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M17 21V19C17 16.791 15.209 15 13 15H5C2.791 15 1 16.791 1 19V21M9 11C11.209 11 13 9.209 13 7C13 4.791 11.209 3 9 3C6.791 3 5 4.791 5 7C5 9.209 6.791 11 9 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          Occupations
-        </Link>
-        <Link href="/lits/historique"
-          className="flex items-center gap-2 rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M12 8V12L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/></svg>
-          Historique
-        </Link>
-      </div>
-
-      {/* Grille des services */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {services.map(service => (
-          <ServiceCard key={service.id} service={service}
-            onAddLit={() => setShowAddLit(service.id)}
-            onNettoyage={lit => setShowNettoyage({ serviceId: service.id, lit })}
-            onDisponible={lit => setShowDisponible({ serviceId: service.id, lit })}
-            onHorsService={lit => setShowHorsService({ serviceId: service.id, lit })}
-            onTransferer={lit => setShowTransferer({ serviceId: service.id, lit })}
-            onVoirOccupation={lit => setShowOccupation({ serviceId: service.id, lit })}
-          />
-        ))}
-      </div>
-
-      {/* ════ MODALS ════════════════════════════════════════════════════ */}
-
-      {showAddService && (
-        <Modal title="Nouveau service" subtitle="Ajoutez un nouveau service hospitalier" onClose={() => setShowAddService(false)}>
-          <form onSubmit={submitService} className="space-y-5">
-            <Field label="Nom du service *"><Input value={newService.nom}  onChange={v => setNewService(p => ({ ...p, nom: v }))}   placeholder="ex : Réanimation…" required/></Field>
-            <Field label="Code (optionnel)"><Input value={newService.code} onChange={v => setNewService(p => ({ ...p, code: v }))} placeholder="ex : CARD, PNEUMO…"/></Field>
-            <Field label="Étage / Localisation *"><Input value={newService.etage} onChange={v => setNewService(p => ({ ...p, etage: v }))} placeholder="ex : 2ème étage…" required/></Field>
-            <Field label="Description">
-              <textarea value={newService.description} onChange={e => setNewService(p => ({ ...p, description: e.target.value }))} rows={2}
-                className="w-full rounded-lg border border-[#e3e3e0] px-4 py-2.5 text-sm focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]"
-                placeholder="Description optionnelle…"/>
-            </Field>
-            <ModalFooter onCancel={() => setShowAddService(false)} submitLabel="Créer le service" loading={loading}/>
-          </form>
-        </Modal>
-      )}
-
-      {showAddLit !== null && (
-        <Modal title="Ajouter un lit" subtitle={services.find(s => s.id === showAddLit)?.nom} onClose={() => setShowAddLit(null)}>
-          <form onSubmit={submitLit} className="space-y-5">
-            <Field label="Numéro du lit *"><Input value={newLit.numero}  onChange={v => setNewLit(p => ({ ...p, numero: v }))}  placeholder="ex : 405A, M12…" required/></Field>
-            <Field label="Chambre"><Input value={newLit.chambre} onChange={v => setNewLit(p => ({ ...p, chambre: v }))} placeholder="ex : Chambre 4…"/></Field>
-            <Field label="Type de lit">
-              <Select value={newLit.type} onChange={v => setNewLit(p => ({ ...p, type: v }))}>
-                <option value="standard">Standard</option><option value="vip">VIP</option>
-                <option value="reanimation">Réanimation</option><option value="isolement">Isolement</option>
-                <option value="maternite">Maternité</option>
-              </Select>
-            </Field>
-            <Field label="Statut initial">
-              <Select value={newLit.statut} onChange={v => setNewLit(p => ({ ...p, statut: v }))}>
-                <option value="disponible">Disponible</option><option value="nettoyage">En nettoyage</option>
-                <option value="horsservice">Hors service</option>
-              </Select>
-            </Field>
-            <Field label="Tarif journalier (FCFA)"><Input type="number" value={newLit.tarif_journalier} onChange={v => setNewLit(p => ({ ...p, tarif_journalier: v }))} placeholder="ex : 15000"/></Field>
-            <ModalFooter onCancel={() => setShowAddLit(null)} submitLabel="Ajouter le lit" loading={loading}/>
-          </form>
-        </Modal>
-      )}
-
-      {showNettoyage && (
-        <Modal title="Marquer en nettoyage" onClose={() => setShowNettoyage(null)}>
-          <div className="space-y-6">
-            <div className="rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
-              <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                Le lit <strong>{showNettoyage.lit.numero}</strong> passera en nettoyage.
-                {showNettoyage.lit.occupation?.patient && <span className="mt-1 block">Patient <strong>{showNettoyage.lit.occupation.patient}</strong> dissocié.</span>}
-              </p>
-            </div>
-            <ModalFooter onCancel={() => setShowNettoyage(null)} onConfirm={submitNettoyage} submitLabel="Confirmer" submitColor="bg-yellow-600 hover:bg-yellow-700"/>
-          </div>
-        </Modal>
-      )}
-
-      {showDisponible && (
-        <Modal title="Marquer comme disponible" onClose={() => setShowDisponible(null)}>
-          <div className="space-y-6">
-            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-              Confirmez que le lit <strong className="text-[#1b1b18] dark:text-[#EDEDEC]">{showDisponible.lit.numero}</strong> est nettoyé et prêt ?
-            </p>
-            <ModalFooter onCancel={() => setShowDisponible(null)} onConfirm={submitDisponible} submitLabel="Confirmer" submitColor="bg-green-600 hover:bg-green-700"/>
-          </div>
-        </Modal>
-      )}
-
-      {showHorsService && (
-        <Modal title="Mettre hors service" onClose={() => setShowHorsService(null)}>
-          <div className="space-y-5">
-            <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
-              <p className="text-sm text-gray-700 dark:text-gray-300">Le lit <strong>{showHorsService.lit.numero}</strong> sera mis hors service.</p>
-            </div>
-            <Field label="Raison (optionnelle)"><Input value={horsServiceRaison} onChange={setHorsServiceRaison} placeholder="ex : Maintenance…"/></Field>
-            <ModalFooter onCancel={() => setShowHorsService(null)} onConfirm={submitHorsService} submitLabel="Mettre hors service" submitColor="bg-gray-700 hover:bg-gray-800"/>
-          </div>
-        </Modal>
-      )}
-
-      {showTransferer && (
-        <Modal title="Transférer le lit" subtitle={`Lit ${showTransferer.lit.numero}`} onClose={() => { setShowTransferer(null); setTransferServiceId(''); }}>
-          <form onSubmit={submitTransferer} className="space-y-5">
-            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Service destination :</p>
-            <Select value={String(transferServiceId)} onChange={v => setTransferServiceId(v ? Number(v) : '')}>
-              <option value="">Sélectionner un service…</option>
-              {services.filter(s => s.id !== showTransferer.serviceId).map(s => (
-                <option key={s.id} value={s.id}>{s.nom} — {s.etage} ({s.disponibles} libres / {s.capacite})</option>
-              ))}
-            </Select>
-            <ModalFooter onCancel={() => { setShowTransferer(null); setTransferServiceId(''); }} submitLabel="Transférer" submitColor="bg-blue-600 hover:bg-blue-700" disabled={transferServiceId === ''}/>
-          </form>
-        </Modal>
-      )}
-
-      {showOccupation?.lit.occupation && (
-        <Modal title="Occupation actuelle" subtitle={`Lit ${showOccupation.lit.numero}`} onClose={() => setShowOccupation(null)} size="lg">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <InfoRow label="Patient"    value={showOccupation.lit.occupation.patient ?? '—'}/>
-              <InfoRow label="Diagnostic" value={showOccupation.lit.occupation.diagnostic ?? '—'}/>
-              <InfoRow label="Entrée"     value={showOccupation.lit.occupation.date_entree ?? '—'}/>
-            </div>
-            <div className="flex gap-3 border-t border-[#e3e3e0] pt-4 dark:border-[#3E3E3A]">
-              <Link href={`/lits/occupations/${showOccupation.lit.occupation.id}`}
-                className="flex-1 rounded-lg bg-[#f53003] px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-[#d42a03]">
-                Voir le dossier
-              </Link>
-              <button onClick={() => setShowOccupation(null)}
-                className="flex-1 rounded-lg border border-[#e3e3e0] px-4 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC]">
-                Fermer
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-    </DashboardLayout>
-  );
 }
 
 // ─── ServiceCard ──────────────────────────────────────────────────────────────
 
-interface ServiceCardProps {
-  service: Service;
-  onAddLit: () => void;
-  onNettoyage: (l: Lit) => void;
-  onDisponible: (l: Lit) => void;
-  onHorsService: (l: Lit) => void;
-  onTransferer: (l: Lit) => void;
-  onVoirOccupation: (l: Lit) => void;
-}
+function ServiceCard({ service, onAddLit, onNettoyage, onDisponible, onHorsService, onTransferer, onVoirOccupation }: {
+    service: Service; onAddLit:()=>void; onNettoyage:(l:Lit)=>void; onDisponible:(l:Lit)=>void; onHorsService:(l:Lit)=>void; onTransferer:(l:Lit)=>void; onVoirOccupation:(l:Lit)=>void;
+}) {
+    const taux = service.capacite > 0 ? Math.round((service.occupes/service.capacite)*100) : 0;
+    const cap  = Math.max(service.capacite,1);
+    const tauxColor = taux>=90?'#ef4444':taux>=70?'#f59e0b':'#10b981';
 
-function ServiceCard({ service, onAddLit, onNettoyage, onDisponible, onHorsService, onTransferer, onVoirOccupation }: ServiceCardProps) {
-  const taux = service.capacite > 0 ? Math.round((service.occupes / service.capacite) * 100) : 0;
-  const cap  = Math.max(service.capacite, 1);
+    return (
+        <div style={{ borderRadius:20, overflow:'hidden', border:'1px solid #eee', background:'#fff', boxShadow:'0 2px 12px rgba(0,0,0,0.04)' }}>
+            {/* Barre accent colorée */}
+            <div style={{ height:3, background: taux>=90?'linear-gradient(90deg,#ef4444,#f87171)':taux>=70?'linear-gradient(90deg,#f59e0b,#fbbf24)':'linear-gradient(90deg,#10b981,#34d399)' }}/>
 
-  return (
-    <div className="rounded-xl border border-[#e3e3e0] bg-white shadow-sm dark:border-[#3E3E3A] dark:bg-[#161615]">
-      <div className="flex items-center justify-between border-b border-[#e3e3e0] p-4 dark:border-[#3E3E3A]">
-        <div>
-          <h3 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{service.nom}</h3>
-          <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">{service.etage}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-sm font-medium tabular-nums text-[#1b1b18] dark:text-[#EDEDEC]">{service.occupes}/{service.capacite}</p>
-            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{taux}% occupé</p>
-          </div>
-          <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold transition-colors duration-300 ${
-            service.disponibles === 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-            : service.disponibles <= 2 ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
-            : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-          }`}>
-            {service.disponibles}
-          </div>
-        </div>
-      </div>
+            {/* Header service */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:'1px solid #f5f5f3' }}>
+                <div>
+                    <h3 style={{ fontSize:15, fontWeight:700, color:'#1a1a18', letterSpacing:'-0.2px' }}>{service.nom}</h3>
+                    <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>{service.etage}</p>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                    <div style={{ textAlign:'right' }}>
+                        <div style={{ fontSize:20, fontWeight:800, color:'#1a1a18', letterSpacing:'-0.5px', lineHeight:1 }}>{service.occupes}/{service.capacite}</div>
+                        <div style={{ fontSize:11, color:tauxColor, fontFamily:'system-ui,sans-serif', fontWeight:700, marginTop:2 }}>{taux}% occupé</div>
+                    </div>
+                    <div style={{ width:44, height:44, borderRadius:'50%', background: service.disponibles===0?'#fef2f2':service.disponibles<=2?'#fffbeb':'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:800, color: service.disponibles===0?'#dc2626':service.disponibles<=2?'#d97706':'#16a34a', border:`2px solid ${service.disponibles===0?'#fecaca':service.disponibles<=2?'#fde68a':'#bbf7d0'}` }}>
+                        {service.disponibles}
+                    </div>
+                </div>
+            </div>
 
-      {/* Barre animée */}
-      <div className="px-4 pt-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-[#e3e3e0] dark:bg-[#3E3E3A]">
-          <div className="flex h-2">
-            <div className="bg-red-500    transition-[width] duration-500" style={{ width: `${(service.occupes     / cap) * 100}%` }}/>
-            <div className="bg-yellow-500 transition-[width] duration-500" style={{ width: `${(service.enNettoyage / cap) * 100}%` }}/>
-            <div className="bg-green-500  transition-[width] duration-500" style={{ width: `${(service.disponibles / cap) * 100}%` }}/>
-          </div>
-        </div>
-      </div>
+            {/* Barre progression segmentée */}
+            <div style={{ padding:'10px 20px 14px' }}>
+                <div style={{ height:8, width:'100%', borderRadius:100, background:'#f5f5f3', overflow:'hidden', display:'flex' }}>
+                    <div style={{ width:`${(service.occupes/cap)*100}%`,     background:'#ef4444', transition:'width 0.5s' }}/>
+                    <div style={{ width:`${(service.enNettoyage/cap)*100}%`, background:'#f59e0b', transition:'width 0.5s' }}/>
+                    <div style={{ width:`${(service.disponibles/cap)*100}%`, background:'#10b981', transition:'width 0.5s' }}/>
+                </div>
+            </div>
 
-      <div className="p-4">
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-          {service.lits.map(lit => (
-            <LitCell key={lit.id} lit={lit}
-              onNettoyage={() => onNettoyage(lit)}
-              onDisponible={() => onDisponible(lit)}
-              onHorsService={() => onHorsService(lit)}
-              onTransferer={() => onTransferer(lit)}
-              onVoirOccupation={() => onVoirOccupation(lit)}
-            />
-          ))}
-          <button onClick={onAddLit}
-            className="group flex h-20 flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#e3e3e0] text-xs font-medium text-[#706f6c] transition-all hover:border-[#f53003] hover:text-[#f53003] dark:border-[#3E3E3A] dark:hover:border-[#FF4433]">
-            <PlusIcon className="h-6 w-6"/><span className="mt-1">Ajouter</span>
-          </button>
-        </div>
-      </div>
+            {/* Grille lits */}
+            <div style={{ padding:'0 20px 16px', display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8 }}>
+                {service.lits.map(lit=>(
+                    <LitCell key={lit.id} lit={lit}
+                        onNettoyage={()=>onNettoyage(lit)} onDisponible={()=>onDisponible(lit)}
+                        onHorsService={()=>onHorsService(lit)} onTransferer={()=>onTransferer(lit)}
+                        onVoirOccupation={()=>onVoirOccupation(lit)}/>
+                ))}
+                {/* Bouton ajouter lit */}
+                <button onClick={onAddLit}
+                    style={{ height:72, borderRadius:12, border:'2px dashed #e5e7eb', background:'transparent', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', gap:3, transition:'all 0.15s', fontFamily:'system-ui,sans-serif' }}
+                    onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor='#f53003';(e.currentTarget as HTMLElement).style.background='#fff5f5';}}
+                    onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor='#e5e7eb';(e.currentTarget as HTMLElement).style.background='transparent';}}>
+                    <svg style={{width:18,height:18,color:'#c0c0bc'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14"/></svg>
+                    <span style={{fontSize:10,color:'#c0c0bc',fontWeight:600}}>Ajouter</span>
+                </button>
+            </div>
 
-      <div className="flex items-center justify-between border-t border-[#e3e3e0] px-4 py-3 dark:border-[#3E3E3A]">
-        <div className="flex flex-wrap items-center gap-3 text-xs text-[#706f6c] dark:text-[#A1A09A]">
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500"/>{service.occupes} occupés</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500"/>{service.disponibles} libres</span>
-          {service.enNettoyage > 0 && <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500"/>{service.enNettoyage} nettoyage</span>}
-          {service.horsService  > 0 && <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-400"/>{service.horsService} hors service</span>}
+            {/* Footer stats */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 20px', borderTop:'1px solid #f5f5f3' }}>
+                <div style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
+                    {[
+                        {dot:'#ef4444',val:service.occupes,label:'occupés'},
+                        {dot:'#10b981',val:service.disponibles,label:'libres'},
+                        ...(service.enNettoyage>0?[{dot:'#f59e0b',val:service.enNettoyage,label:'nettoyage'}]:[]),
+                        ...(service.horsService>0?[{dot:'#9ca3af',val:service.horsService,label:'hors svc'}]:[]),
+                    ].map((s,i)=>(
+                        <div key={i} style={{display:'flex',alignItems:'center',gap:5}}>
+                            <div style={{width:8,height:8,borderRadius:2,background:s.dot}}/>
+                            <span style={{fontSize:12,color:'#706f6c',fontFamily:'system-ui,sans-serif'}}>{s.val} {s.label}</span>
+                        </div>
+                    ))}
+                </div>
+                <div style={{display:'flex',gap:12}}>
+                    <Link href={`/lits/service/${service.id}/chambres`} style={{fontSize:12,color:'#9ca3af',textDecoration:'none',fontFamily:'system-ui,sans-serif'}}>Chambres</Link>
+                    <Link href={`/lits/occupations?service_id=${service.id}`} style={{fontSize:12,fontWeight:700,color:'#f53003',textDecoration:'none',fontFamily:'system-ui,sans-serif'}}>Détails →</Link>
+                </div>
+            </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href={`/lits/service/${service.id}/chambres`} className="text-sm font-medium text-[#706f6c] hover:text-[#f53003] dark:text-[#A1A09A]">Chambres</Link>
-          <Link href={`/lits/occupations?service_id=${service.id}`} className="text-sm font-medium text-[#f53003] hover:underline dark:text-[#FF4433]">Voir détails →</Link>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
 
 // ─── LitCell ──────────────────────────────────────────────────────────────────
 
-interface LitCellProps {
-  lit: Lit;
-  onNettoyage: () => void;
-  onDisponible: () => void;
-  onHorsService: () => void;
-  onTransferer: () => void;
-  onVoirOccupation: () => void;
-}
+function LitCell({ lit, onNettoyage, onDisponible, onHorsService, onTransferer, onVoirOccupation }: {
+    lit: Lit; onNettoyage:()=>void; onDisponible:()=>void; onHorsService:()=>void; onTransferer:()=>void; onVoirOccupation:()=>void;
+}) {
+    const [hovered, setHovered] = useState(false);
+    const cfg = SC[lit.statut] ?? SC.horsservice;
 
-function LitCell({ lit, onNettoyage, onDisponible, onHorsService, onTransferer, onVoirOccupation }: LitCellProps) {
-  const cfg = statutConfig[lit.statut] ?? statutConfig.horsservice;
+    return (
+        <div style={{ position:'relative', height:72, borderRadius:12, border:`1.5px solid ${cfg.border}`, background: hovered ? 'rgba(0,0,0,0.7)' : cfg.grad, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.2s', overflow:'hidden' }}
+            onMouseEnter={()=>setHovered(true)}
+            onMouseLeave={()=>setHovered(false)}>
 
-  return (
-    <div className={`group relative flex h-20 flex-col items-center justify-center rounded-lg border text-xs font-medium transition-all duration-300 hover:scale-105 ${cfg.bg} ${cfg.border} ${cfg.text}`}>
-      <span className="font-semibold text-sm">{lit.numero}</span>
-      <span className="text-[10px] opacity-75">{cfg.label}</span>
+            {!hovered ? (
+                <>
+                    <span style={{ fontSize:12, fontWeight:800, color:cfg.color, lineHeight:1 }}>{lit.numero}</span>
+                    <div style={{ width:6, height:6, borderRadius:'50%', background:cfg.dot, marginTop:5 }}/>
+                    {lit.chambre && <span style={{ fontSize:9, color:cfg.color, opacity:0.65, marginTop:2, fontFamily:'system-ui,sans-serif' }}>{lit.chambre}</span>}
+                </>
+            ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:3, width:'100%', padding:'4px 6px' }}>
+                    {lit.statut==='occupe' && <>
+                        <CtxBtn onClick={onVoirOccupation} color="#fff" bg="rgba(255,255,255,0.2)">👁 Patient</CtxBtn>
+                        <CtxBtn onClick={onNettoyage}      color="#fff" bg="rgba(245,158,11,0.8)">🧹 Nettoyage</CtxBtn>
+                    </>}
+                    {lit.statut==='nettoyage' && <CtxBtn onClick={onDisponible} color="#fff" bg="rgba(16,185,129,0.8)">✅ Dispo</CtxBtn>}
+                    {lit.statut==='disponible' && <>
+                        <Link href={`/lits/occupations/create?lit_id=${lit.id}`} style={{display:'block',textAlign:'center',borderRadius:6,padding:'3px 2px',fontSize:9,fontWeight:700,color:'#fff',background:'rgba(245,48,3,0.85)',textDecoration:'none'}}>+ Admettre</Link>
+                        <CtxBtn onClick={onHorsService} color="#fff" bg="rgba(107,114,128,0.8)">⚠ Hors svc</CtxBtn>
+                    </>}
+                    {lit.statut==='horsservice' && <CtxBtn onClick={onDisponible} color="#fff" bg="rgba(37,99,235,0.8)">🔄 Activer</CtxBtn>}
+                    <CtxBtn onClick={onTransferer} color="#fff" bg="rgba(37,99,235,0.7)">↗ Transférer</CtxBtn>
+                </div>
+            )}
 
-      {/* Menu contextuel */}
-      <div className="absolute inset-0 hidden flex-col items-center justify-center gap-1 rounded-lg bg-black/50 p-1 group-hover:flex">
-        {lit.statut === 'occupe' && <>
-          <button onClick={onVoirOccupation} className="w-full rounded bg-white/20 px-1.5 py-0.5 text-[10px] text-white backdrop-blur hover:bg-white/30">👁 Voir patient</button>
-          <button onClick={onNettoyage}      className="w-full rounded bg-yellow-600/90 px-1.5 py-0.5 text-[10px] text-white hover:bg-yellow-700">🧹 Nettoyage</button>
-        </>}
-        {lit.statut === 'nettoyage' &&
-          <button onClick={onDisponible} className="w-full rounded bg-green-600/90 px-1.5 py-0.5 text-[10px] text-white hover:bg-green-700">✅ Disponible</button>
-        }
-        {lit.statut === 'disponible' && <>
-          <Link href={`/lits/occupations/create?lit_id=${lit.id}`} className="w-full rounded bg-[#f53003]/90 px-1.5 py-0.5 text-center text-[10px] text-white hover:bg-[#d42a03]">+ Admettre</Link>
-          <button onClick={onHorsService} className="w-full rounded bg-gray-600/90 px-1.5 py-0.5 text-[10px] text-white hover:bg-gray-700">⚠ Hors service</button>
-        </>}
-        {lit.statut === 'horsservice' &&
-          <button onClick={onDisponible} className="w-full rounded bg-blue-600/90 px-1.5 py-0.5 text-[10px] text-white hover:bg-blue-700">🔄 Réactiver</button>
-        }
-        <button onClick={onTransferer} className="w-full rounded bg-blue-600/90 px-1.5 py-0.5 text-[10px] text-white hover:bg-blue-700">↗ Transférer</button>
-      </div>
-
-      {/* Tooltip patient */}
-      {lit.occupation?.patient && (
-        <div className="absolute bottom-full left-1/2 z-20 mb-2 hidden w-52 -translate-x-1/2 rounded-lg border border-[#e3e3e0] bg-white p-3 shadow-xl group-hover:block dark:border-[#3E3E3A] dark:bg-[#1C1C1A]">
-          <p className="truncate font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{lit.occupation.patient}</p>
-          <p className="mt-0.5 truncate text-xs text-[#706f6c] dark:text-[#A1A09A]">{lit.occupation.diagnostic}</p>
-          <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">Depuis : {lit.occupation.date_entree}</p>
+            {/* Tooltip patient */}
+            {lit.occupation?.patient && !hovered && (
+                <div style={{ position:'absolute', bottom:'calc(100% + 8px)', left:'50%', transform:'translateX(-50%)', width:180, borderRadius:10, background:'#fff', border:'1px solid #eee', padding:'10px 12px', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', pointerEvents:'none', zIndex:20, display:'none' }} className="lit-tooltip">
+                    <div style={{ fontSize:12, fontWeight:700, color:'#1a1a18', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lit.occupation.patient}</div>
+                    <div style={{ fontSize:11, color:'#9ca3af', marginTop:3, fontFamily:'system-ui,sans-serif' }}>{lit.occupation.diagnostic}</div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
 
-// ─── UI Primitives ────────────────────────────────────────────────────────────
+function CtxBtn({ onClick, children, color, bg }: { onClick:()=>void; children:React.ReactNode; color:string; bg:string }) {
+    return (
+        <button onClick={onClick} style={{ width:'100%', borderRadius:5, padding:'3px 2px', fontSize:9, fontWeight:700, color, background:bg, border:'none', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>
+            {children}
+        </button>
+    );
+}
 
-function Modal({ title, subtitle, children, onClose, size = 'md' }: {
-  title: string; subtitle?: string; children: React.ReactNode; onClose: () => void; size?: 'md' | 'lg';
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className={`w-full rounded-xl bg-white shadow-2xl dark:bg-[#161615] ${size === 'lg' ? 'max-w-xl' : 'max-w-md'}`}>
-        <div className="flex items-start justify-between border-b border-[#e3e3e0] p-6 dark:border-[#3E3E3A]">
-          <div>
-            <h2 className="text-lg font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">{title}</h2>
-            {subtitle && <p className="mt-0.5 text-sm text-[#706f6c] dark:text-[#A1A09A]">{subtitle}</p>}
-          </div>
-          <button onClick={onClose} className="ml-4 rounded-lg p-1 text-[#706f6c] hover:bg-[#f5f5f3] dark:hover:bg-[#3E3E3A]">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </button>
+// ─── Modal primitives ─────────────────────────────────────────────────────────
+
+function MModal({ title, subtitle, children, onClose, size=520 }: { title:string; subtitle?:string; children:React.ReactNode; onClose:()=>void; size?:number }) {
+    return (
+        <div style={{ position:'fixed', inset:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'rgba(10,10,8,0.6)', backdropFilter:'blur(10px)' }}>
+            <div style={{ width:'100%', maxWidth:size, borderRadius:22, background:'#fff', boxShadow:'0 32px 80px rgba(0,0,0,0.2)', overflow:'hidden' }}>
+                <div style={{ padding:'18px 22px 14px', borderBottom:'1px solid #f0f0ee', display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
+                    <div>
+                        <h2 style={{ fontSize:16, fontWeight:700, color:'#1a1a18', letterSpacing:'-0.3px' }}>{title}</h2>
+                        {subtitle && <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>{subtitle}</p>}
+                    </div>
+                    <button onClick={onClose} style={{ width:30, height:30, borderRadius:8, border:'1px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div style={{ padding:'18px 22px' }}>{children}</div>
+            </div>
         </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
+    );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className="mb-1.5 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{label}</label>{children}</div>;
+function MField({ label, children }: { label:string; children:React.ReactNode }) {
+    return <div><label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>{label}</label>{children}</div>;
 }
 
-function Input({ value, onChange, placeholder, required, type = 'text' }: {
-  value: string; onChange: (v: string) => void; placeholder?: string; required?: boolean; type?: string;
-}) {
-  return (
-    <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} required={required}
-      className="w-full rounded-lg border border-[#e3e3e0] px-4 py-2.5 text-sm focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]"/>
-  );
-}
-
-function Select({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
-  return (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      className="w-full rounded-lg border border-[#e3e3e0] px-4 py-2.5 text-sm focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]">
-      {children}
-    </select>
-  );
-}
-
-function ModalFooter({ onCancel, onConfirm, submitLabel, submitColor = 'bg-[#f53003] hover:bg-[#d42a03]', disabled = false, loading = false }: {
-  onCancel: () => void; onConfirm?: () => void; submitLabel: string; submitColor?: string; disabled?: boolean; loading?: boolean;
-}) {
-  return (
-    <div className="flex justify-end gap-3 pt-2">
-      <button type="button" onClick={onCancel}
-        className="rounded-lg border border-[#e3e3e0] px-5 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:bg-[#1C1C1A]">
-        Annuler
-      </button>
-      <button type={onConfirm ? 'button' : 'submit'} onClick={onConfirm} disabled={disabled || loading}
-        className={`flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${submitColor}`}>
-        {loading && <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>}
-        {submitLabel}
-      </button>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{label}</p><p className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{value}</p></div>;
-}
-
-function PlusIcon({ className = 'h-5 w-5' }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
+function MFooter({ onCancel, onConfirm, label, color='#f53003', disabled=false, loading=false }: { onCancel:()=>void; onConfirm?:()=>void; label:string; color?:string; disabled?:boolean; loading?:boolean }) {
+    return (
+        <div style={{ display:'flex', justifyContent:'flex-end', gap:10, paddingTop:8 }}>
+            <button type="button" onClick={onCancel} style={{ height:38, padding:'0 18px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fff', fontSize:13, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Annuler</button>
+            <button type={onConfirm?'button':'submit'} onClick={onConfirm} disabled={disabled||loading}
+                style={{ height:38, padding:'0 20px', borderRadius:10, border:'none', background:color, color:'#fff', fontSize:13, fontWeight:700, cursor:disabled?'not-allowed':'pointer', fontFamily:'system-ui,sans-serif', opacity:(disabled||loading)?0.5:1, display:'flex', alignItems:'center', gap:7, boxShadow:`0 4px 14px ${color}40` }}>
+                {loading && <svg style={{width:14,height:14,animation:'spin 1s linear infinite'}} viewBox="0 0 24 24" fill="none"><circle style={{opacity:0.25}} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{opacity:0.75}} fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>}
+                {label}
+            </button>
+        </div>
+    );
 }

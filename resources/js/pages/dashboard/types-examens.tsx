@@ -2,23 +2,16 @@ import { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import DashboardLayout from './layout';
 
-// ─── Types ────────────────────────────────────────────────────
-interface TypeExamen {
-    id: number;
-    code: string;
-    nom: string;
-    description: string | null;
-    module: 'laboratoire' | 'imagerie';
-    categorie: string | null;
-    modalite_imagerie_id: number | null;
-    modalite_imagerie?: { id: number; code: string; nom: string } | null;
-    prix: number | null;
-    duree_minutes: number | null;
-    actif: boolean;
-    analyses_count: number;
-    examens_imagerie_count: number;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
+interface TypeExamen {
+    id: number; code: string; nom: string; description: string|null;
+    module: 'laboratoire'|'imagerie'; categorie: string|null;
+    modalite_imagerie_id: number|null;
+    modalite_imagerie?: { id: number; code: string; nom: string }|null;
+    prix: number|null; duree_minutes: number|null; actif: boolean;
+    analyses_count: number; examens_imagerie_count: number;
+}
 interface Props {
     typesExamens: { data: TypeExamen[]; total: number; last_page: number; links: any[] };
     stats: { total: number; laboratoire: number; imagerie: number; actifs: number };
@@ -26,401 +19,399 @@ interface Props {
     filters: { search?: string; module?: string; actif?: string };
 }
 
-// ─── Constantes ───────────────────────────────────────────────
-const CATEGORIES_LABO = ['Hématologie', 'Biochimie', 'Microbiologie', 'Immunologie', 'Parasitologie', 'Hormonologie', 'Toxicologie'];
-const CATEGORIES_IMAGERIE = ['Radiologie conventionnelle', 'Imagerie en coupe', 'Sénologie', 'Dentisterie', 'Médecine nucléaire'];
-const MODALITES = ['Radiographie', 'Scanner', 'IRM', 'Échographie', 'Mammographie', 'Panoramique', 'TEP-Scan'];
+// ─── Config ───────────────────────────────────────────────────────────────────
 
-const MODALITE_COLORS: Record<string, string> = {
-    Radiographie: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
-    Scanner:      'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
-    IRM:          'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-    Échographie:  'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-    Mammographie: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
-    Panoramique:  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    'TEP-Scan':   'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+const CATS_LABO     = ['Hématologie','Biochimie','Microbiologie','Immunologie','Parasitologie','Hormonologie','Toxicologie'];
+const CATS_IMAGERIE = ['Radiologie conventionnelle','Imagerie en coupe','Sénologie','Dentisterie','Médecine nucléaire'];
+
+const MOD_CLR: Record<string, { color: string; bg: string; border: string }> = {
+    'Radiographie': { color:'#0284c7', bg:'#f0f9ff', border:'#bae6fd' },
+    'Scanner':      { color:'#4f46e5', bg:'#eef2ff', border:'#c7d2fe' },
+    'IRM':          { color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' },
+    'Échographie':  { color:'#0d9488', bg:'#f0fdfa', border:'#99f6e4' },
+    'Mammographie': { color:'#db2777', bg:'#fdf2f8', border:'#fbcfe8' },
+    'Panoramique':  { color:'#d97706', bg:'#fffbeb', border:'#fde68a' },
+    'TEP-Scan':     { color:'#dc2626', bg:'#fef2f2', border:'#fecaca' },
 };
 
-// ─── Modale Formulaire ────────────────────────────────────────
-function TypeExamenModal({
-    editItem,
-    onClose,
-    modalites,
-}: {
-    editItem: TypeExamen | null;
-    onClose: () => void;
-    modalites: { id: number; code: string; nom: string }[];
-}) {
+const iSx: React.CSSProperties = { width:'100%', height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', boxSizing:'border-box' };
+const fIn  = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f53003'; e.currentTarget.style.background='#fff'; };
+const fOut = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f0f0ee'; e.currentTarget.style.background='#fafaf9'; };
+
+function SLabel({ label, color='#f53003' }: { label: string; color?: string }) {
+    return (
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+            <div style={{ width:3, height:14, borderRadius:100, background:color }}/>
+            <span style={{ fontSize:11, fontWeight:700, color:'#9ca3af', letterSpacing:'0.08em', textTransform:'uppercase', fontFamily:'system-ui,sans-serif' }}>{label}</span>
+        </div>
+    );
+}
+
+function FL({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+    return (
+        <div>
+            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>{label}</label>
+            {children}
+            {error && <p style={{ marginTop:4, fontSize:11, color:'#ef4444', fontFamily:'system-ui,sans-serif' }}>{error}</p>}
+        </div>
+    );
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
+function TypeExamenModal({ editItem, onClose, modalites }: { editItem: TypeExamen|null; onClose:()=>void; modalites: { id: number; code: string; nom: string }[] }) {
     const [form, setForm] = useState({
-        code: editItem?.code ?? '',
-        nom: editItem?.nom ?? '',
-        description: editItem?.description ?? '',
-        module: editItem?.module ?? 'laboratoire' as 'laboratoire' | 'imagerie',
+        code: editItem?.code ?? '', nom: editItem?.nom ?? '', description: editItem?.description ?? '',
+        module: (editItem?.module ?? 'laboratoire') as 'laboratoire'|'imagerie',
         categorie: editItem?.categorie ?? '',
         modalite_imagerie_id: editItem?.modalite_imagerie_id?.toString() ?? '',
-        prix: editItem?.prix?.toString() ?? '',
-        duree_minutes: editItem?.duree_minutes?.toString() ?? '',
+        prix: editItem?.prix?.toString() ?? '', duree_minutes: editItem?.duree_minutes?.toString() ?? '',
         actif: editItem?.actif ?? true,
     });
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const inp = "w-full rounded-lg border border-[#e3e3e0] px-4 py-2.5 text-sm focus:border-[#f53003] focus:outline-none dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]";
-    const lbl = "mb-1.5 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]";
+    const cats = form.module==='imagerie' ? CATS_IMAGERIE : CATS_LABO;
+    const isLab = form.module === 'laboratoire';
 
-    const categories = form.module === 'imagerie' ? CATEGORIES_IMAGERIE : CATEGORIES_LABO;
-
-    const setModule = (m: 'laboratoire' | 'imagerie') => {
-        setForm(f => ({ ...f, module: m, categorie: '', modalite_imagerie_id: '' }));
-    };
+    const setModule = (m: 'laboratoire'|'imagerie') => setForm(f=>({...f,module:m,categorie:'',modalite_imagerie_id:''}));
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (form.module === 'imagerie' && !form.modalite_imagerie_id) {
-            setErrors({ modalite_imagerie_id: 'La modalité est obligatoire pour l\'imagerie' });
-            return;
-        }
-        setErrors({});
-        setProcessing(true);
-        const data = {
-            ...form,
-            prix: form.prix ? Number(form.prix) : null,
-            duree_minutes: form.duree_minutes ? Number(form.duree_minutes) : null,
-            modalite_imagerie_id: form.modalite_imagerie_id ? Number(form.modalite_imagerie_id) : null,
-        };
-        const opts = { onFinish: () => setProcessing(false), onSuccess: onClose };
-        if (editItem) {
-            router.put(`/type-examens/${editItem.id}`, data, opts);
-        } else {
-            router.post('/type-examens', data, opts);
-        }
+        if (form.module==='imagerie' && !form.modalite_imagerie_id) { setErrors({modalite_imagerie_id:'La modalité est obligatoire pour l\'imagerie'}); return; }
+        setErrors({}); setProcessing(true);
+        const data = { ...form, prix:form.prix?Number(form.prix):null, duree_minutes:form.duree_minutes?Number(form.duree_minutes):null, modalite_imagerie_id:form.modalite_imagerie_id?Number(form.modalite_imagerie_id):null };
+        const opts = { onFinish:()=>setProcessing(false), onSuccess:onClose };
+        editItem ? router.put(`/type-examens/${editItem.id}`, data, opts) : router.post('/type-examens', data, opts);
     };
 
+    const modColor = isLab ? '#059669' : '#0284c7';
+    const modBg    = isLab ? '#f0fdf4' : '#f0f9ff';
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl dark:bg-[#161615] max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e3e3e0] bg-white px-6 py-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                    <div>
-                        <h2 className="text-xl font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">
-                            {editItem ? 'Modifier le type d\'examen' : 'Nouveau type d\'examen'}
-                        </h2>
-                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                            Catalogue des examens disponibles
-                        </p>
+        <div style={{ position:'fixed', inset:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'rgba(10,10,8,0.6)', backdropFilter:'blur(10px)' }}>
+            <div style={{ width:'100%', maxWidth:680, borderRadius:24, background:'#fff', boxShadow:'0 32px 80px rgba(0,0,0,0.2)', maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+
+                {/* Header */}
+                <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #f0f0ee', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                        <div style={{ width:40, height:40, borderRadius:12, background:modBg, border:`1.5px solid ${modColor}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
+                            {isLab ? '🧪' : '🩻'}
+                        </div>
+                        <div>
+                            <h2 style={{ fontSize:17, fontWeight:700, color:'#1a1a18', letterSpacing:'-0.3px' }}>{editItem ? 'Modifier le type d\'examen' : 'Nouveau type d\'examen'}</h2>
+                            <p style={{ fontSize:12, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>Catalogue des examens disponibles</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="rounded-full p-2 text-[#706f6c] hover:bg-[#e3e3e0] dark:text-[#A1A09A] dark:hover:bg-[#3E3E3A]">
-                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                    <button onClick={onClose} style={{ width:30, height:30, borderRadius:8, border:'1px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
 
-                <form onSubmit={submit} className="p-6 space-y-5">
-                    <div>
-                        <label className={lbl}>Module *</label>
-                        <div className="grid grid-cols-2 gap-3">
-                            {(['laboratoire', 'imagerie'] as const).map(m => (
-                                <button key={m} type="button" onClick={() => setModule(m)}
-                                    className={`flex items-center gap-3 rounded-xl border-2 p-4 transition-all ${form.module === m ? (m === 'laboratoire' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-sky-500 bg-sky-50 dark:bg-sky-900/20') : 'border-[#e3e3e0] hover:border-[#706f6c] dark:border-[#3E3E3A]'}`}>
-                                    {/* icônes et labels inchangés */}
-                                    {m === 'laboratoire' ? (
-                                        <svg className={`h-8 w-8 ${form.module === 'laboratoire' ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#706f6c] dark:text-[#A1A09A]'}`} viewBox="0 0 24 24" fill="none">
-                                            <path d="M9 3H15M9 3V13.5L5.5 19C5.5 19 4 21 6 21H18C20 21 18.5 19 18.5 19L15 13.5V3M9 3H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                            <circle cx="10" cy="17" r="1" fill="currentColor"/>
-                                            <circle cx="14" cy="15" r="1" fill="currentColor"/>
-                                        </svg>
-                                    ) : (
-                                        <svg className={`h-8 w-8 ${form.module === 'imagerie' ? 'text-sky-600 dark:text-sky-400' : 'text-[#706f6c] dark:text-[#A1A09A]'}`} viewBox="0 0 24 24" fill="none">
-                                            <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-                                            <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5"/>
-                                            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-                                            <path d="M3 8H21" stroke="currentColor" strokeWidth="1.5"/>
-                                            <circle cx="6" cy="6" r="1" fill="currentColor"/>
-                                        </svg>
-                                    )}
-                                    <div className="text-left">
-                                        <p className={`font-medium capitalize ${form.module === m ? (m === 'laboratoire' ? 'text-emerald-700 dark:text-emerald-400' : 'text-sky-700 dark:text-sky-400') : 'text-[#1b1b18] dark:text-[#EDEDEC]'}`}>
-                                            {m === 'laboratoire' ? '🧪 Laboratoire' : '🩻 Imagerie'}
-                                        </p>
-                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                            {m === 'laboratoire' ? 'Analyses biologiques' : 'Examens radiologiques'}
-                                        </p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                <div style={{ overflowY:'auto', flex:1 }}>
+                    <form onSubmit={submit} style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:20 }}>
 
-                    <div className="grid grid-cols-2 gap-4">
+                        {/* Sélection module */}
                         <div>
-                            <label className={lbl}>Code *</label>
-                            <input type="text" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} className={inp} placeholder="LAB-HEM-001" required />
-                        </div>
-                        <div>
-                            <label className={lbl}>Nom *</label>
-                            <input type="text" value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} className={inp} placeholder="Numération Formule Sanguine" required />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className={lbl}>Catégorie</label>
-                            <select value={form.categorie} onChange={e => setForm(f => ({ ...f, categorie: e.target.value }))} className={inp}>
-                                <option value="">Sélectionner...</option>
-                                {categories.map(c => <option key={c}>{c}</option>)}
-                            </select>
-                        </div>
-                        {form.module === 'imagerie' && (
-                            <div>
-                                <label className={lbl}>Modalité *</label>
-                                <select
-                                    value={form.modalite_imagerie_id}
-                                    onChange={e => setForm(f => ({ ...f, modalite_imagerie_id: e.target.value }))}
-                                    className={`${inp} ${errors.modalite_imagerie_id ? 'border-red-500' : ''}`}
-                                    required
-                                >
-                                    <option value="">Sélectionner...</option>
-                                    {modalites.map(m => (
-                                        <option key={m.id} value={m.id}>
-                                            {m.code ? `${m.code} - ` : ''}{m.nom}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.modalite_imagerie_id && <p className="mt-1 text-xs text-red-500">{errors.modalite_imagerie_id}</p>}
+                            <SLabel label="Module *"/>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                                {(['laboratoire','imagerie'] as const).map(m=>{
+                                    const active = form.module===m;
+                                    const mc = m==='laboratoire' ? '#059669' : '#0284c7';
+                                    const mb = m==='laboratoire' ? '#f0fdf4' : '#f0f9ff';
+                                    const mbd = m==='laboratoire' ? '#bbf7d0' : '#bae6fd';
+                                    return (
+                                        <button key={m} type="button" onClick={()=>setModule(m)}
+                                            style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', borderRadius:14, border:`2px solid ${active?mc:'#f0f0ee'}`, background:active?mb:'#fafaf9', cursor:'pointer', transition:'all 0.15s', textAlign:'left' }}>
+                                            <div style={{ width:42, height:42, borderRadius:12, background:active?mb:'#f5f5f3', border:`1.5px solid ${active?mbd:'#f0f0ee'}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                                                {m==='laboratoire' ? '🧪' : '🩻'}
+                                            </div>
+                                            <div>
+                                                <p style={{ fontSize:14, fontWeight:700, color:active?mc:'#1a1a18' }}>
+                                                    {m==='laboratoire' ? 'Laboratoire' : 'Imagerie'}
+                                                </p>
+                                                <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:2 }}>
+                                                    {m==='laboratoire' ? 'Analyses biologiques' : 'Examens radiologiques'}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className={lbl}>Prix (FCFA)</label>
-                            <input type="number" value={form.prix} onChange={e => setForm(f => ({ ...f, prix: e.target.value }))} className={inp} min={0} placeholder="5000" />
                         </div>
+
+                        {/* Identification */}
                         <div>
-                            <label className={lbl}>Durée estimée (min)</label>
-                            <input type="number" value={form.duree_minutes} onChange={e => setForm(f => ({ ...f, duree_minutes: e.target.value }))} className={inp} min={0} placeholder="30" />
+                            <SLabel label="Identification" color={modColor}/>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                                <FL label="Code *">
+                                    <input type="text" value={form.code} onChange={e=>setForm(f=>({...f,code:e.target.value}))} placeholder={isLab?"LAB-HEM-001":"IMG-RX-001"} required style={iSx} onFocus={fIn} onBlur={fOut}/>
+                                </FL>
+                                <FL label="Nom *">
+                                    <input type="text" value={form.nom} onChange={e=>setForm(f=>({...f,nom:e.target.value}))} placeholder={isLab?"Numération Formule Sanguine":"Radiographie thoracique"} required style={iSx} onFocus={fIn} onBlur={fOut}/>
+                                </FL>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label className={lbl}>Description</label>
-                        <textarea rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className={inp} placeholder="Description et indications..." />
-                    </div>
+                        {/* Catégorie + Modalité */}
+                        <div>
+                            <SLabel label={isLab ? 'Catégorie' : 'Catégorie & Modalité'} color={modColor}/>
+                            <div style={{ display:'grid', gridTemplateColumns:form.module==='imagerie'?'1fr 1fr':'1fr', gap:12 }}>
+                                <FL label="Catégorie">
+                                    <select value={form.categorie} onChange={e=>setForm(f=>({...f,categorie:e.target.value}))} style={iSx} onFocus={fIn} onBlur={fOut}>
+                                        <option value="">Sélectionner…</option>
+                                        {cats.map(c=><option key={c}>{c}</option>)}
+                                    </select>
+                                </FL>
+                                {form.module==='imagerie' && (
+                                    <FL label="Modalité *" error={errors.modalite_imagerie_id}>
+                                        <select value={form.modalite_imagerie_id} onChange={e=>setForm(f=>({...f,modalite_imagerie_id:e.target.value}))} required style={{ ...iSx, borderColor:errors.modalite_imagerie_id?'#ef4444':'#f0f0ee' }} onFocus={fIn} onBlur={fOut}>
+                                            <option value="">Sélectionner…</option>
+                                            {modalites.map(m=><option key={m.id} value={m.id}>{m.code?`${m.code} - `:''}{m.nom}</option>)}
+                                        </select>
+                                    </FL>
+                                )}
+                            </div>
+                        </div>
 
-                    <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#e3e3e0] p-3 dark:border-[#3E3E3A]">
-                        <input type="checkbox" checked={form.actif} onChange={e => setForm(f => ({ ...f, actif: e.target.checked }))} className="h-4 w-4 rounded text-[#f53003]" />
-                        <span className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Type d'examen actif</span>
-                    </label>
+                        {/* Tarification */}
+                        <div>
+                            <SLabel label="Tarification & durée" color="#f59e0b"/>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                                <FL label="Prix (FCFA)">
+                                    <input type="number" value={form.prix} onChange={e=>setForm(f=>({...f,prix:e.target.value}))} min={0} placeholder="5000" style={iSx} onFocus={fIn} onBlur={fOut}/>
+                                </FL>
+                                <FL label="Durée estimée (min)">
+                                    <input type="number" value={form.duree_minutes} onChange={e=>setForm(f=>({...f,duree_minutes:e.target.value}))} min={0} placeholder="30" style={iSx} onFocus={fIn} onBlur={fOut}/>
+                                </FL>
+                            </div>
+                        </div>
 
-                    <div className="flex justify-end gap-3 border-t border-[#e3e3e0] pt-4 dark:border-[#3E3E3A]">
-                        <button type="button" onClick={onClose} className="rounded-lg border border-[#e3e3e0] px-6 py-2.5 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC]">
-                            Annuler
-                        </button>
-                        <button type="submit" disabled={processing} className="flex items-center gap-2 rounded-lg bg-[#f53003] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03] disabled:opacity-60">
-                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            {processing ? 'Enregistrement...' : editItem ? 'Mettre à jour' : 'Enregistrer'}
-                        </button>
-                    </div>
-                </form>
+                        {/* Description */}
+                        <div>
+                            <SLabel label="Description" color="#8b5cf6"/>
+                            <textarea rows={2} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="Description et indications…"
+                                style={{ ...iSx, height:'auto', padding:'8px 12px', resize:'vertical' }} onFocus={fIn} onBlur={fOut}/>
+                        </div>
+
+                        {/* Actif toggle */}
+                        <label onClick={()=>setForm(f=>({...f,actif:!f.actif}))}
+                            style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:12, border:`1.5px solid ${form.actif?'#16a34a':'#f0f0ee'}`, background:form.actif?'#f0fdf4':'#fafaf9', cursor:'pointer', transition:'all 0.15s' }}>
+                            <div style={{ width:18, height:18, borderRadius:5, border:`2px solid ${form.actif?'#16a34a':'#d1d5db'}`, background:form.actif?'#16a34a':'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                {form.actif && <svg style={{width:11,height:11,color:'#fff'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
+                            </div>
+                            <div>
+                                <p style={{ fontSize:13, fontWeight:600, color:'#1a1a18', fontFamily:'system-ui,sans-serif' }}>Type d'examen actif</p>
+                                <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:1 }}>Visible dans le catalogue de prescriptions</p>
+                            </div>
+                        </label>
+
+                        {/* Footer */}
+                        <div style={{ display:'flex', justifyContent:'flex-end', gap:10, paddingTop:8, borderTop:'1px solid #f0f0ee' }}>
+                            <button type="button" onClick={onClose} style={{ height:36, padding:'0 16px', borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fff', fontSize:13, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Annuler</button>
+                            <button type="submit" disabled={processing}
+                                style={{ height:36, padding:'0 18px', borderRadius:9, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', opacity:processing?0.7:1, boxShadow:'0 4px 14px rgba(245,48,3,0.25)', display:'flex', alignItems:'center', gap:7 }}>
+                                ✓ {processing ? 'Enregistrement…' : editItem ? 'Mettre à jour' : 'Enregistrer'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
 }
 
-// ─── Page principale ──────────────────────────────────────────
+// ─── Page principale ──────────────────────────────────────────────────────────
+
 export default function TypesExamens({ typesExamens, stats, modalites, filters }: Props) {
     const { flash }: any = usePage().props;
     const [showModal, setShowModal] = useState(false);
-    const [editItem, setEditItem] = useState<TypeExamen | null>(null);
-    const [search, setSearch] = useState(filters.search ?? '');
-    const [module, setModule] = useState(filters.module ?? '');
-    const [actif, setActif] = useState(filters.actif ?? '');
+    const [editItem,  setEditItem]  = useState<TypeExamen|null>(null);
+    const [search,    setSearch]    = useState(filters.search ?? '');
+    const [module,    setModFilter] = useState(filters.module ?? '');
+    const [actif,     setActif]     = useState(filters.actif  ?? '');
 
-    if (!typesExamens) {
-        return (
-            <DashboardLayout title="Types d'examens" subtitle="Catalogue unifié laboratoire et imagerie">
-                <div className="p-8 text-center text-red-600 dark:text-red-400">
-                    Erreur : les données des types d'examens n'ont pas été chargées.
-                </div>
-            </DashboardLayout>
-        );
-    }
+    if (!typesExamens) return (
+        <DashboardLayout title="Types d'examens" subtitle="Catalogue unifié laboratoire et imagerie">
+            <div style={{ padding:'32px', textAlign:'center', color:'#dc2626', fontFamily:'system-ui,sans-serif' }}>Erreur : données non chargées.</div>
+        </DashboardLayout>
+    );
 
-    const applyFilters = (overrides: object = {}) =>
-        router.get('/type-examens', { search, module, actif, ...overrides }, { preserveState: true, replace: true });
-
-    const handleDelete = (t: TypeExamen) => {
-        const usages = t.analyses_count + t.examens_imagerie_count;
-        if (usages > 0) {
-            alert(`Impossible de supprimer : ce type est utilisé dans ${usages} examen(s).`);
-            return;
-        }
+    const apply = (ov: object = {}) => router.get('/type-examens', { search, module, actif, ...ov }, { preserveState:true, replace:true });
+    const del = (t: TypeExamen) => {
+        const u = t.analyses_count + t.examens_imagerie_count;
+        if (u>0) { alert(`Impossible de supprimer : ce type est utilisé dans ${u} examen(s).`); return; }
         if (confirm(`Supprimer "${t.nom}" ?`)) router.delete(`/type-examens/${t.id}`);
     };
 
-    const openEdit = (t: TypeExamen) => { setEditItem(t); setShowModal(true); };
-    const openNew  = () => { setEditItem(null); setShowModal(true); };
-
     return (
         <DashboardLayout title="Types d'examens" subtitle="Catalogue unifié laboratoire et imagerie">
+
             {flash?.success && (
-                <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">{flash.success}</div>
+                <div style={{ marginBottom:16, padding:'12px 16px', borderRadius:14, background:'#f0fdf4', border:'1px solid #bbf7d0', fontSize:13, color:'#16a34a', fontFamily:'system-ui,sans-serif', display:'flex', gap:8, alignItems:'center' }}>✅ {flash.success}</div>
             )}
 
-            {/* Stats cards */}
-            <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {/* ══════════════════════════════════════ KPI */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
                 {[
-                    { l: 'Total', v: stats.total, color: 'text-[#f53003]', bg: 'bg-[#fff2f2] dark:bg-[#1D0002]', icon: '📋' },
-                    { l: 'Laboratoire', v: stats.laboratoire, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: '🧪' },
-                    { l: 'Imagerie', v: stats.imagerie, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-900/20', icon: '🩻' },
-                    { l: 'Actifs', v: stats.actifs, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: '✅' },
-                ].map(s => (
-                    <div key={s.l} className="rounded-xl border border-[#e3e3e0] bg-white p-4 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                        <div className={`mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg text-lg ${s.bg}`}>{s.icon}</div>
-                        <p className={`text-2xl font-semibold ${s.color}`}>{s.v}</p>
-                        <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">{s.l}</p>
+                    { label:'Total',        value:stats.total,       icon:'📋', grad:'linear-gradient(135deg,#1a1a18,#2d2d2a)', shadow:'rgba(0,0,0,0.25)' },
+                    { label:'Laboratoire',  value:stats.laboratoire, icon:'🧪', grad:'linear-gradient(135deg,#065f46,#059669)', shadow:'rgba(5,150,105,0.35)' },
+                    { label:'Imagerie',     value:stats.imagerie,    icon:'🩻', grad:'linear-gradient(135deg,#0c4a6e,#0284c7)', shadow:'rgba(2,132,199,0.35)' },
+                    { label:'Actifs',       value:stats.actifs,      icon:'✅', grad:'linear-gradient(135deg,#14532d,#16a34a)', shadow:'rgba(22,163,74,0.3)' },
+                ].map((k,i)=>(
+                    <div key={i} style={{ borderRadius:18, padding:'20px', background:k.grad, color:'#fff', position:'relative', overflow:'hidden', boxShadow:`0 8px 24px ${k.shadow}` }}>
+                        <div style={{ position:'absolute', top:-14, right:-14, width:70, height:70, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }}/>
+                        <div style={{ fontSize:22, marginBottom:8 }}>{k.icon}</div>
+                        <div style={{ fontSize:28, fontWeight:800, letterSpacing:'-0.5px', lineHeight:1 }}>{k.value}</div>
+                        <div style={{ fontSize:11, fontWeight:500, opacity:0.85, marginTop:4, fontFamily:'system-ui,sans-serif' }}>{k.label}</div>
                     </div>
                 ))}
             </div>
 
-            {/* Filtres + Bouton nouveau */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-1 flex-wrap items-center gap-3">
-                    <div className="relative flex-1 max-w-xs">
-                        <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A1A09A]" viewBox="0 0 24 24" fill="none">
-                            <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.5"/>
-                            <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                        </svg>
-                        <input
-                            type="text"
-                            placeholder="Code, nom..."
-                            value={search}
-                            onChange={e => { setSearch(e.target.value); applyFilters({ search: e.target.value }); }}
-                            className="w-full rounded-lg border border-[#e3e3e0] bg-white py-2.5 pl-10 pr-4 text-sm focus:border-[#f53003] focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]"
-                        />
+            {/* ══════════════════════════════════════ TOOLBAR */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:18, flexWrap:'wrap' }}>
+                <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+                    {/* Recherche */}
+                    <div style={{ position:'relative' }}>
+                        <svg style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', width:13, height:13, color:'#c0c0bc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" value={search} onChange={e=>{ setSearch(e.target.value); apply({search:e.target.value}); }} placeholder="Code, nom…"
+                            style={{ height:38, paddingLeft:30, paddingRight:12, borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', width:200 }}
+                            onFocus={fIn} onBlur={fOut}/>
                     </div>
 
-                    <div className="flex rounded-lg border border-[#e3e3e0] bg-white p-1 dark:border-[#3E3E3A] dark:bg-[#161615]">
-                        {[['', 'Tous'], ['laboratoire', '🧪 Labo'], ['imagerie', '🩻 Imagerie']].map(([val, label]) => (
-                            <button
-                                key={val}
-                                onClick={() => { setModule(val); applyFilters({ module: val }); }}
-                                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${module === val ? 'bg-[#f53003] text-white' : 'text-[#706f6c] hover:bg-[#f5f5f3] dark:text-[#A1A09A] dark:hover:bg-[#1C1C1A]'}`}
-                            >
-                                {label}
+                    {/* Toggle module */}
+                    <div style={{ display:'flex', borderRadius:10, border:'1.5px solid #f0f0ee', overflow:'hidden' }}>
+                        {[['','Tous'],['laboratoire','🧪 Labo'],['imagerie','🩻 Imagerie']].map(([v,l])=>(
+                            <button key={v} onClick={()=>{ setModFilter(v); apply({module:v}); }}
+                                style={{ height:36, padding:'0 12px', fontSize:13, fontWeight:600, fontFamily:'system-ui,sans-serif', background:module===v?'#f53003':'#fafaf9', color:module===v?'#fff':'#9ca3af', border:'none', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+                                {l}
                             </button>
                         ))}
                     </div>
 
-                    <select
-                        value={actif}
-                        onChange={e => { setActif(e.target.value); applyFilters({ actif: e.target.value }); }}
-                        className="rounded-lg border border-[#e3e3e0] bg-white px-3 py-2.5 text-sm focus:border-[#f53003] focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]"
-                    >
+                    <select value={actif} onChange={e=>{ setActif(e.target.value); apply({actif:e.target.value}); }}
+                        style={{ height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', cursor:'pointer' }}>
                         <option value="">Tous statuts</option>
                         <option value="1">Actifs</option>
                         <option value="0">Inactifs</option>
                     </select>
                 </div>
 
-                <button onClick={openNew} className="flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03]">
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                <button onClick={()=>{ setEditItem(null); setShowModal(true); }}
+                    style={{ display:'flex', alignItems:'center', gap:7, height:38, padding:'0 16px', borderRadius:10, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(245,48,3,0.3)', transition:'transform 0.15s' }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform='translateY(-1px)'}
+                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform='none'}>
+                    <svg style={{width:14,height:14}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v14M5 12h14"/></svg>
                     Nouveau type
                 </button>
             </div>
 
-            {/* Tableau */}
-            <div className="overflow-hidden rounded-xl border border-[#e3e3e0] bg-white dark:border-[#3E3E3A] dark:bg-[#161615]">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="border-b border-[#e3e3e0] bg-[#fafaf9] dark:border-[#3E3E3A] dark:bg-[#0a0a0a]">
-                            <tr>
-                                {['Code', 'Nom', 'Module', 'Catégorie / Modalité', 'Prix', 'Durée', 'Utilisations', 'Statut', 'Actions'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#706f6c] dark:text-[#A1A09A]">{h}</th>
+            {/* ══════════════════════════════════════ TABLE */}
+            <div style={{ borderRadius:20, overflow:'hidden', border:'1px solid #eee', background:'#fff', boxShadow:'0 2px 12px rgba(0,0,0,0.04)' }}>
+                <div style={{ height:3, background:'linear-gradient(90deg,#059669,#0284c7,#8b5cf6)' }}/>
+                <div style={{ overflowX:'auto' }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:'system-ui,sans-serif' }}>
+                        <thead>
+                            <tr style={{ borderBottom:'1px solid #f5f5f3' }}>
+                                {['Code','Nom','Module','Catégorie / Modalité','Prix','Durée','Utilisations','Statut','Actions'].map((h,i)=>(
+                                    <th key={i} style={{ padding:'12px 14px', textAlign:i===8?'right':'left', fontSize:11, fontWeight:700, color:'#c0c0bc', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#e3e3e0] dark:divide-[#3E3E3A]">
-                            {typesExamens.data.map(t => (
-                                <tr key={t.id} className="transition-colors hover:bg-[#fafaf9] dark:hover:bg-[#1C1C1A]">
-                                    <td className="whitespace-nowrap px-4 py-4">
-                                        <span className="font-mono text-sm font-medium text-[#f53003] dark:text-[#FF4433]">{t.code}</span>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <p className="text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{t.nom}</p>
-                                        {t.description && <p className="mt-0.5 text-xs text-[#706f6c] dark:text-[#A1A09A] line-clamp-1">{t.description}</p>}
-                                    </td>
-                                    <td className="whitespace-nowrap px-4 py-4">
-                                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${t.module === 'laboratoire' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400'}`}>
-                                            {t.module === 'laboratoire' ? '🧪' : '🩻'} {t.module === 'laboratoire' ? 'Labo' : 'Imagerie'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        {t.categorie && <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{t.categorie}</p>}
-                                        {t.modalite_imagerie && (
-                                            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${MODALITE_COLORS[t.modalite_imagerie.nom] ?? 'bg-gray-100 text-gray-700'}`}>
-                                                {t.modalite_imagerie.nom}
+                        <tbody>
+                            {typesExamens.data.length===0 ? (
+                                <tr><td colSpan={9} style={{ padding:'48px', textAlign:'center', color:'#c0c0bc', fontSize:14 }}>
+                                    <div style={{ fontSize:36, marginBottom:8 }}>📋</div>
+                                    <p style={{ fontWeight:600, color:'#374151', marginBottom:4 }}>Aucun type d'examen trouvé</p>
+                                    <p>Modifiez vos filtres ou créez un nouveau type.</p>
+                                </td></tr>
+                            ) : typesExamens.data.map((t,i)=>{
+                                const isLab = t.module==='laboratoire';
+                                const modCfg = t.modalite_imagerie ? (MOD_CLR[t.modalite_imagerie.nom] ?? { color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb' }) : null;
+                                const usages = t.analyses_count + t.examens_imagerie_count;
+                                return (
+                                    <tr key={t.id} style={{ borderBottom:i<typesExamens.data.length-1?'1px solid #f5f5f3':'none', transition:'background 0.15s', opacity:t.actif?1:0.6 }}
+                                        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='#fafaf9'}
+                                        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}>
+
+                                        <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}>
+                                            <span style={{ fontFamily:'monospace', fontSize:12, fontWeight:700, color:'#f53003' }}>{t.code}</span>
+                                        </td>
+                                        <td style={{ padding:'12px 14px', maxWidth:200 }}>
+                                            <p style={{ fontSize:13, fontWeight:600, color:'#1a1a18', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.nom}</p>
+                                            {t.description && <p style={{ fontSize:11, color:'#9ca3af', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.description}</p>}
+                                        </td>
+                                        <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}>
+                                            <span style={{ fontSize:11, fontWeight:700, color:isLab?'#059669':'#0284c7', background:isLab?'#f0fdf4':'#f0f9ff', border:`1px solid ${isLab?'#bbf7d0':'#bae6fd'}`, borderRadius:100, padding:'3px 10px' }}>
+                                                {isLab ? '🧪 Labo' : '🩻 Imagerie'}
                                             </span>
-                                        )}
-                                    </td>
-                                    <td className="whitespace-nowrap px-4 py-4 text-sm text-[#1b1b18] dark:text-[#EDEDEC]">
-                                        {t.prix ? new Intl.NumberFormat('fr-CM').format(t.prix) + ' F' : '—'}
-                                    </td>
-                                    <td className="whitespace-nowrap px-4 py-4 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                        {t.duree_minutes ? `${t.duree_minutes} min` : '—'}
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <span className="inline-flex items-center rounded-full bg-[#f5f5f3] px-2.5 py-1 text-xs font-medium text-[#706f6c] dark:bg-[#3E3E3A] dark:text-[#A1A09A]">
-                                            {t.analyses_count + t.examens_imagerie_count} examen(s)
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${t.actif ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'}`}>
-                                            {t.actif ? 'Actif' : 'Inactif'}
-                                        </span>
-                                    </td>
-                                    <td className="whitespace-nowrap px-4 py-4">
-                                        <div className="flex items-center gap-1">
-                                            <button onClick={() => openEdit(t)} className="rounded-lg p-2 text-[#706f6c] hover:bg-[#f5f5f3] dark:text-[#A1A09A] dark:hover:bg-[#1C1C1A]" title="Modifier">
-                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M11 4H4C3.47 4 3 4.45 3 5V20C3 20.55 3.47 21 4 21H19C19.55 21 20 20.55 20 20V13M18.5 2.5C19.33 1.67 20.67 1.67 21.5 2.5C22.33 3.33 22.33 4.67 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                            </button>
-                                            <button onClick={() => handleDelete(t)} className="rounded-lg p-2 text-[#706f6c] hover:bg-red-100 hover:text-red-600 dark:text-[#A1A09A] dark:hover:bg-red-900/30 dark:hover:text-red-400" title="Supprimer">
-                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M8 6V4C8 3.45 8.45 3 9 3H15C15.55 3 16 3.45 16 4V6M19 6V20C19 20.55 18.55 21 18 21H6C5.45 21 5 20.55 5 20V6H19Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td style={{ padding:'12px 14px' }}>
+                                            {t.categorie && <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginBottom:4 }}>{t.categorie}</p>}
+                                            {modCfg && t.modalite_imagerie && (
+                                                <span style={{ fontSize:11, fontWeight:700, color:modCfg.color, background:modCfg.bg, border:`1px solid ${modCfg.border}`, borderRadius:100, padding:'2px 9px', whiteSpace:'nowrap' }}>
+                                                    {t.modalite_imagerie.nom}
+                                                </span>
+                                            )}
+                                            {!t.categorie && !t.modalite_imagerie && <span style={{ color:'#c0c0bc', fontSize:12 }}>—</span>}
+                                        </td>
+                                        <td style={{ padding:'12px 14px', fontSize:13, fontWeight:600, color:'#1a1a18', whiteSpace:'nowrap' }}>
+                                            {t.prix ? new Intl.NumberFormat('fr-CM').format(t.prix)+' F' : '—'}
+                                        </td>
+                                        <td style={{ padding:'12px 14px', fontSize:12, color:'#9ca3af', whiteSpace:'nowrap' }}>
+                                            {t.duree_minutes ? `⏱ ${t.duree_minutes} min` : '—'}
+                                        </td>
+                                        <td style={{ padding:'12px 14px' }}>
+                                            <span style={{ fontSize:12, fontWeight:600, color:'#374151', background:'#f5f5f3', borderRadius:100, padding:'3px 10px' }}>
+                                                {usages} examen{usages>1?'s':''}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding:'12px 14px' }}>
+                                            <span style={{ fontSize:11, fontWeight:700, color:t.actif?'#16a34a':'#6b7280', background:t.actif?'#f0fdf4':'#f9fafb', border:`1px solid ${t.actif?'#bbf7d0':'#e5e7eb'}`, borderRadius:100, padding:'3px 10px' }}>
+                                                {t.actif ? '● Actif' : '● Inactif'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding:'12px 14px' }}>
+                                            <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:2 }}>
+                                                <button onClick={()=>{ setEditItem(t); setShowModal(true); }} title="Modifier"
+                                                    style={{ width:28, height:28, borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='#f0f0ee'}
+                                                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}>
+                                                    <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                </button>
+                                                <button onClick={()=>del(t)} title="Supprimer"
+                                                    style={{ width:28, height:28, borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='#fef2f2'}
+                                                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}>
+                                                    <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
 
-                {typesExamens.data.length === 0 && (
-                    <div className="py-16 text-center">
-                        <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Aucun type d'examen trouvé</p>
-                        <p className="text-sm text-[#706f6c]">Modifiez vos filtres ou créez un nouveau type.</p>
-                    </div>
-                )}
-
-                <div className="flex items-center justify-between border-t border-[#e3e3e0] px-6 py-4 dark:border-[#3E3E3A]">
-                    <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                        <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{typesExamens.total}</span> types d'examens
-                    </p>
+                {/* Footer pagination */}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 18px', borderTop:'1px solid #f5f5f3' }}>
+                    <span style={{ fontSize:13, color:'#9ca3af', fontFamily:'system-ui,sans-serif' }}>
+                        <span style={{ fontWeight:600, color:'#1a1a18' }}>{typesExamens.total}</span> types d'examens
+                    </span>
                     {typesExamens.last_page > 1 && (
-                        <div className="flex items-center gap-1">
-                            {typesExamens.links.map((link, i) => (
-                                <button
-                                    key={i}
-                                    disabled={!link.url}
-                                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
-                                    className={`rounded-lg px-3 py-2 text-sm transition-colors ${link.active ? 'bg-[#f53003] text-white' : 'border border-[#e3e3e0] text-[#706f6c] hover:bg-[#f5f5f3] disabled:opacity-40 dark:border-[#3E3E3A] dark:text-[#A1A09A]'}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
+                        <div style={{ display:'flex', gap:4 }}>
+                            {typesExamens.links.map((link,i)=>(
+                                <button key={i} disabled={!link.url} onClick={()=>link.url&&router.get(link.url,{},{preserveState:true})}
+                                    style={{ minWidth:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:7, fontSize:12, fontFamily:'system-ui,sans-serif', fontWeight:link.active?700:400, background:link.active?'#f53003':'transparent', color:link.active?'#fff':'#706f6c', border:link.active?'none':'1px solid #f0f0ee', cursor:link.url?'pointer':'not-allowed', opacity:link.url?1:0.4, padding:'0 6px' }}
+                                    dangerouslySetInnerHTML={{ __html:link.label }}/>
                             ))}
                         </div>
                     )}
                 </div>
             </div>
 
-            {showModal && <TypeExamenModal editItem={editItem} onClose={() => { setShowModal(false); setEditItem(null); }} modalites={modalites} />}
+            {showModal && <TypeExamenModal editItem={editItem} onClose={()=>{ setShowModal(false); setEditItem(null); }} modalites={modalites}/>}
         </DashboardLayout>
     );
 }

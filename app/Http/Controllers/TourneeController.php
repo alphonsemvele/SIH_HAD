@@ -33,22 +33,26 @@ class TourneeController extends Controller
         ->when($request->statut,      fn ($q) => $q->where('statut',      $request->statut));
 
         $tournees = match ($tab) {
-            'planning'   => $query->deLaSemaine(
-                                Carbon::parse($request->input('semaine', now()->startOfWeek()))
-                            )
-                            ->orderBy('date')
-                            ->orderBy('heure_debut_prevue')
-                            ->get(),
 
+            // Planning semaine : ordre chronologique (lun→dim, matin→soir)
+            'planning' => $query->deLaSemaine(
+                              Carbon::parse($request->input('semaine', now()->startOfWeek()))
+                          )
+                          ->orderBy('date', 'asc')
+                          ->orderBy('heure_debut_prevue', 'asc')
+                          ->get(),
+
+            // Historique : plus récent en premier
             'historique' => $query->where('date', '<', today())
                             ->orderBy('date', 'desc')
-                            ->orderBy('heure_debut_prevue')
+                            ->orderBy('heure_debut_prevue', 'desc')
                             ->limit(100)
                             ->get(),
 
-            default      => $query->whereDate('date', today())
-                            ->orderBy('heure_debut_prevue')
-                            ->get(),
+            // Aujourd'hui : heure la plus récente en premier
+            default => $query->whereDate('date', today())
+                        ->orderBy('heure_debut_prevue', 'desc')
+                        ->get(),
         };
 
         $formatted = $tournees->map(fn (Tournee $t) => $this->formatTournee($t));
@@ -169,7 +173,7 @@ class TourneeController extends Controller
 
     public function demarrer(Tournee $tournee): RedirectResponse
     {
-        // ✅ Idempotent : déjà en cours → on passe sans erreur
+        // Idempotent : déjà en cours → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_EN_COURS) {
             return redirect()->back();
         }
@@ -187,12 +191,11 @@ class TourneeController extends Controller
 
     public function terminer(Tournee $tournee): RedirectResponse
     {
-        // ✅ Idempotent : déjà terminée → on passe sans erreur
+        // Idempotent : déjà terminée → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_TERMINEE) {
             return redirect()->back();
         }
 
-        // Annulée → impossible
         abort_if(
             $tournee->statut === Tournee::STATUT_ANNULEE,
             403,
@@ -206,7 +209,7 @@ class TourneeController extends Controller
 
     public function suspendre(Tournee $tournee): RedirectResponse
     {
-        // ✅ Idempotent : déjà planifiée (suspendue) → on passe sans erreur
+        // Idempotent : déjà planifiée (suspendue) → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_PLANIFIEE) {
             return redirect()->back();
         }
@@ -230,7 +233,7 @@ class TourneeController extends Controller
             'Impossible d\'annuler une tournée déjà terminée.'
         );
 
-        // ✅ Idempotent : déjà annulée → on passe sans erreur
+        // Idempotent : déjà annulée → on passe sans erreur
         if ($tournee->statut === Tournee::STATUT_ANNULEE) {
             return redirect()->back();
         }
@@ -247,7 +250,7 @@ class TourneeController extends Controller
     {
         abort_if($visite->tournee_id !== $tournee->id, 404);
 
-        // ✅ Idempotent : visite déjà validée → on passe sans erreur
+        // Idempotent : visite déjà validée → on passe sans erreur
         if ($visite->visite_at !== null) {
             return redirect()->back();
         }
@@ -279,14 +282,16 @@ class TourneeController extends Controller
             'id'                     => $t->id,
             'soignant_id'            => $t->soignant_id,
             'service_id'             => $t->service_id,
+            // date est castée 'date' → Carbon → format OK
             'date'                   => $t->date->format('Y-m-d'),
             'vehicule'               => $t->vehicule,
-            'heure_debut_prevue'     => $t->heure_debut_prevue?->format('H:i'),
-            'heure_fin_prevue'       => $t->heure_fin_prevue?->format('H:i'),
-            'heure_debut_effective'  => $t->heure_debut_effective?->format('H:i'),
-            'heure_fin_effective'    => $t->heure_fin_effective?->format('H:i'),
-            'heure_debut_2'          => $t->heure_debut_2?->format('H:i'),
-            'heure_debut_3'          => $t->heure_debut_3?->format('H:i'),
+            // heures castées 'string' → valeur brute "HH:MM", pas besoin de ->format()
+            'heure_debut_prevue'     => $t->heure_debut_prevue,
+            'heure_fin_prevue'       => $t->heure_fin_prevue,
+            'heure_debut_effective'  => $t->heure_debut_effective,
+            'heure_fin_effective'    => $t->heure_fin_effective,
+            'heure_debut_2'          => $t->heure_debut_2,
+            'heure_debut_3'          => $t->heure_debut_3,
             'kilometres'             => $t->kilometres,
             'type'                   => $t->type,
             'notes'                  => $t->notes,
@@ -294,6 +299,7 @@ class TourneeController extends Controller
             'recurrence'             => $t->recurrence,
             'jours_actifs'           => $t->jours_actifs ?? [],
             'frequence_journaliere'  => $t->frequence_journaliere ?? 1,
+            // date_fin_recurrence est castée 'date' → Carbon → format OK
             'date_fin_recurrence'    => $t->date_fin_recurrence?->format('Y-m-d'),
             'recurrence_parent_id'   => $t->recurrence_parent_id,
             'patients_total'         => $t->visiteHads->count(),

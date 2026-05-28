@@ -2,299 +2,292 @@ import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import DashboardLayout from './layout';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Anomalie {
-    id: number;
-    nom: string;
-    categorie: string | null;
-    description: string | null;
-    actif: boolean;
-}
+interface Anomalie { id: number; nom: string; categorie: string|null; description: string|null; actif: boolean; }
+interface Props { anomalies: Anomalie[]; categories: string[]; filters: { search?: string; categorie?: string }; }
 
-interface Props {
-    anomalies:  Anomalie[];
-    categories: string[];
-    filters:    { search?: string; categorie?: string };
-}
+// ─── Config catégories ────────────────────────────────────────────────────────
 
-// ─── Catégories de maladies / pathologies ─────────────────────────────────────
 const CATEGORIES_PHARMACIE = [
-    'Cardiovasculaire',
-    'Respiratoire',
-    'Neurologique',
-    'Digestif / Gastro-entérologie',
-    'Endocrinologie / Métabolisme',
-    'Infectieux / Parasitaire',
-    'Dermatologie',
-    'Rhumatologie / Ostéo-articulaire',
-    'Urologie / Néphrologie',
-    'Gynécologie / Obstétrique',
-    'Pédiatrie',
-    'Psychiatrie / Santé mentale',
-    'Ophtalmologie',
-    'ORL',
-    'Hématologie / Oncologie',
-    'Immunologie / Allergologie',
-    'Traumatologie / Orthopédie',
-    'Chirurgie',
-    'Urgences',
-    'Autre',
+    'Cardiovasculaire','Respiratoire','Neurologique','Digestif / Gastro-entérologie',
+    'Endocrinologie / Métabolisme','Infectieux / Parasitaire','Dermatologie',
+    'Rhumatologie / Ostéo-articulaire','Urologie / Néphrologie','Gynécologie / Obstétrique',
+    'Pédiatrie','Psychiatrie / Santé mentale','Ophtalmologie','ORL',
+    'Hématologie / Oncologie','Immunologie / Allergologie','Traumatologie / Orthopédie',
+    'Chirurgie','Urgences','Autre',
 ];
 
-const FORM_VIDE = { nom: '', categorie: '', description: '' };
+// Couleur + emoji par catégorie médicale
+const CAT_CFG: Record<string, { color: string; bg: string; border: string; icon: string }> = {
+    'Cardiovasculaire':               { color:'#dc2626', bg:'#fef2f2', border:'#fecaca', icon:'❤️' },
+    'Respiratoire':                   { color:'#0284c7', bg:'#f0f9ff', border:'#bae6fd', icon:'🫁' },
+    'Neurologique':                   { color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe', icon:'🧠' },
+    'Digestif / Gastro-entérologie':  { color:'#d97706', bg:'#fffbeb', border:'#fde68a', icon:'🫃' },
+    'Endocrinologie / Métabolisme':   { color:'#059669', bg:'#f0fdf4', border:'#bbf7d0', icon:'⚗️' },
+    'Infectieux / Parasitaire':       { color:'#16a34a', bg:'#f0fdf4', border:'#86efac', icon:'🦠' },
+    'Dermatologie':                   { color:'#db2777', bg:'#fdf2f8', border:'#fbcfe8', icon:'🧴' },
+    'Rhumatologie / Ostéo-articulaire':{ color:'#9a3412', bg:'#fff7ed', border:'#fed7aa', icon:'🦴' },
+    'Urologie / Néphrologie':         { color:'#0369a1', bg:'#e0f2fe', border:'#bae6fd', icon:'💧' },
+    'Gynécologie / Obstétrique':      { color:'#be185d', bg:'#fdf2f8', border:'#f9a8d4', icon:'🌸' },
+    'Pédiatrie':                      { color:'#2563eb', bg:'#eff6ff', border:'#bfdbfe', icon:'👶' },
+    'Psychiatrie / Santé mentale':    { color:'#6d28d9', bg:'#ede9fe', border:'#c4b5fd', icon:'🧘' },
+    'Ophtalmologie':                  { color:'#0e7490', bg:'#ecfeff', border:'#a5f3fc', icon:'👁️' },
+    'ORL':                            { color:'#4338ca', bg:'#eef2ff', border:'#c7d2fe', icon:'👂' },
+    'Hématologie / Oncologie':        { color:'#b91c1c', bg:'#fef2f2', border:'#fca5a5', icon:'🩸' },
+    'Immunologie / Allergologie':     { color:'#15803d', bg:'#f0fdf4', border:'#86efac', icon:'🛡️' },
+    'Traumatologie / Orthopédie':     { color:'#92400e', bg:'#fef3c7', border:'#fcd34d', icon:'🦿' },
+    'Chirurgie':                      { color:'#374151', bg:'#f9fafb', border:'#e5e7eb', icon:'🔪' },
+    'Urgences':                       { color:'#f53003', bg:'#fff5f5', border:'#fca5a5', icon:'🚨' },
+    'Autre':                          { color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb', icon:'📋' },
+    '—':                              { color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb', icon:'📋' },
+};
+const getCat = (c: string) => CAT_CFG[c] ?? CAT_CFG['Autre'];
 
-export default function AnomaliesIndex({
-    anomalies  = [],
-    categories = [],
-    filters    = {},
-}: Partial<Props>) {
-    const { flash, errors: serverErrors } = usePage<{
-        flash?: { success?: string; error?: string };
-        errors: Record<string, string>;
-    }>().props;
+const FORM_VIDE = { nom:'', categorie:'', description:'' };
+
+const iSx: React.CSSProperties = { width:'100%', height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', boxSizing:'border-box' };
+const fIn  = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f53003'; e.currentTarget.style.background='#fff'; };
+const fOut = (e: React.FocusEvent<any>) => { e.currentTarget.style.borderColor='#f0f0ee'; e.currentTarget.style.background='#fafaf9'; };
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function AnomaliesIndex({ anomalies=[], categories=[], filters={} }: Partial<Props>) {
+    const { flash, errors: serverErrors } = usePage<{ flash?: { success?:string; error?:string }; errors: Record<string,string> }>().props;
 
     const [search,    setSearch]    = useState(filters.search    ?? '');
     const [categorie, setCategorie] = useState(filters.categorie ?? '');
+    const [modal,     setModal]     = useState<'create'|'edit'|null>(null);
+    const [editing,   setEditing]   = useState<Anomalie|null>(null);
+    const [form,      setForm]      = useState(FORM_VIDE);
 
-    // Modal
-    const [modal,   setModal]   = useState<'create' | 'edit' | null>(null);
-    const [editing, setEditing] = useState<Anomalie | null>(null);
-    const [form,    setForm]    = useState(FORM_VIDE);
+    const ouvrirCreate = () => { setForm(FORM_VIDE); setEditing(null); setModal('create'); };
+    const ouvrirEdit   = (a: Anomalie) => { setForm({ nom:a.nom, categorie:a.categorie??'', description:a.description??'' }); setEditing(a); setModal('edit'); };
+    const fermer       = () => { setModal(null); setEditing(null); };
 
-    const ouvrirCreate = () => {
-        setForm(FORM_VIDE);
-        setEditing(null);
-        setModal('create');
-    };
-
-    const ouvrirEdit = (a: Anomalie) => {
-        setForm({ nom: a.nom, categorie: a.categorie ?? '', description: a.description ?? '' });
-        setEditing(a);
-        setModal('edit');
-    };
-
-    const fermer = () => { setModal(null); setEditing(null); };
-
-    const applyFilters = (s: string, c: string) => {
-        router.get('/anomalies',
-            { search: s || undefined, categorie: c || undefined },
-            { preserveScroll: true, replace: true });
-    };
+    const applyFilters = (s: string, c: string) => router.get('/anomalies', { search:s||undefined, categorie:c||undefined }, { preserveScroll:true, replace:true });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const payload = { ...form };
-
-        if (modal === 'create') {
-            router.post('/anomalies', payload, {
-                preserveScroll: true,
-                onSuccess: fermer,
-            });
-        } else if (editing) {
-            router.put(`/anomalies/${editing.id}`, payload, {
-                preserveScroll: true,
-                onSuccess: fermer,
-            });
-        }
+        if (modal==='create') router.post('/anomalies', form, { preserveScroll:true, onSuccess:fermer });
+        else if (editing) router.put(`/anomalies/${editing.id}`, form, { preserveScroll:true, onSuccess:fermer });
     };
+    const toggleActif = (a: Anomalie) => router.put(`/anomalies/${a.id}`, { nom:a.nom, categorie:a.categorie??'', description:a.description??'', actif:!a.actif }, { preserveScroll:true });
+    const supprimer   = (a: Anomalie) => { if (!confirm(`Supprimer « ${a.nom} » ?`)) return; router.delete(`/anomalies/${a.id}`, { preserveScroll:true }); };
 
-    const toggleActif = (a: Anomalie) => {
-        router.put(`/anomalies/${a.id}`,
-            { nom: a.nom, categorie: a.categorie ?? '', description: a.description ?? '', actif: !a.actif },
-            { preserveScroll: true }
-        );
-    };
-
-    const supprimer = (a: Anomalie) => {
-        if (!confirm(`Supprimer « ${a.nom} » ?`)) return;
-        router.delete(`/anomalies/${a.id}`, { preserveScroll: true });
-    };
-
-    // Grouper par catégorie pour l'affichage
+    // Groupes
     const groupes: Record<string, Anomalie[]> = {};
-    for (const a of anomalies) {
-        const cle = a.categorie ?? '—';
-        if (!groupes[cle]) groupes[cle] = [];
-        groupes[cle].push(a);
-    }
+    for (const a of anomalies) { const k = a.categorie ?? '—'; if (!groupes[k]) groupes[k]=[]; groupes[k].push(a); }
+    const totalActifs = anomalies.filter(a=>a.actif).length;
 
     return (
         <DashboardLayout title="Anomalies pharmacie" subtitle="Référentiel des anomalies déclarables">
 
             {/* Flash */}
-            {(flash?.success || flash?.error) && (
-                <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${flash.error
-                    ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
-                    : 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400'}`}>
-                    {flash.success ?? flash.error}
+            {(flash?.success||flash?.error) && (
+                <div style={{ marginBottom:16, padding:'12px 16px', borderRadius:14, background:flash.error?'#fef2f2':'#f0fdf4', border:`1px solid ${flash.error?'#fecaca':'#bbf7d0'}`, fontSize:13, color:flash.error?'#dc2626':'#16a34a', fontFamily:'system-ui,sans-serif', display:'flex', gap:8, alignItems:'center' }}>
+                    {flash.error?'⚠️':'✅'} {flash.success??flash.error}
                 </div>
             )}
 
-            {/* ── Barre filtres + bouton ──────────────────────────── */}
-            <div className="mb-6 flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px]">
-                    <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#706f6c]" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 21L15 15M17 11A6 6 0 111 11A6 6 0 0117 11Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
+            {/* ══════════════════════════════════════ KPI mini */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:22 }}>
+                {[
+                    { label:'Total anomalies',    value:anomalies.length,                          icon:'📋', grad:'linear-gradient(135deg,#1a1a18,#2d2d2a)', shadow:'rgba(0,0,0,0.2)' },
+                    { label:'Actives',            value:totalActifs,                               icon:'✅', grad:'linear-gradient(135deg,#065f46,#10b981)', shadow:'rgba(16,185,129,0.3)' },
+                    { label:'Inactives',          value:anomalies.length-totalActifs,              icon:'⏸️', grad:'linear-gradient(135deg,#374151,#6b7280)', shadow:'rgba(107,114,128,0.2)' },
+                    { label:'Catégories',         value:Object.keys(groupes).length,               icon:'🗂️', grad:'linear-gradient(135deg,#4c1d95,#8b5cf6)', shadow:'rgba(139,92,246,0.3)' },
+                ].map((k,i)=>(
+                    <div key={i} style={{ borderRadius:16, padding:'18px', background:k.grad, color:'#fff', position:'relative', overflow:'hidden', boxShadow:`0 6px 20px ${k.shadow}` }}>
+                        <div style={{ position:'absolute', top:-12, right:-12, width:60, height:60, borderRadius:'50%', background:'rgba(255,255,255,0.1)' }}/>
+                        <div style={{ fontSize:20, marginBottom:6 }}>{k.icon}</div>
+                        <div style={{ fontSize:26, fontWeight:800, letterSpacing:'-0.5px', lineHeight:1 }}>{k.value}</div>
+                        <div style={{ fontSize:10, fontWeight:500, opacity:0.8, marginTop:3, fontFamily:'system-ui,sans-serif' }}>{k.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* ══════════════════════════════════════ TOOLBAR */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:22, flexWrap:'wrap' }}>
+                <div style={{ position:'relative', flex:1, minWidth:240 }}>
+                    <svg style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', width:13, height:13, color:'#c0c0bc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     <input type="text" value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') applyFilters(search, categorie); }}
+                        onChange={e=>setSearch(e.target.value)}
+                        onKeyDown={e=>{ if(e.key==='Enter') applyFilters(search,categorie); }}
                         placeholder="Rechercher une anomalie…"
-                        className="w-full rounded-lg border border-[#e3e3e0] py-2.5 pl-9 pr-4 text-sm focus:border-[#f53003] focus:outline-none dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]"/>
+                        style={{ ...iSx, paddingLeft:30 }} onFocus={fIn} onBlur={fOut}/>
                 </div>
-
-                <select value={categorie}
-                    onChange={e => { setCategorie(e.target.value); applyFilters(search, e.target.value); }}
-                    className="rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm dark:border-[#3E3E3A] dark:bg-[#161615] dark:text-[#EDEDEC]">
+                <select value={categorie} onChange={e=>{ setCategorie(e.target.value); applyFilters(search,e.target.value); }}
+                    style={{ height:38, padding:'0 12px', borderRadius:10, border:'1.5px solid #f0f0ee', background:'#fafaf9', fontSize:13, outline:'none', fontFamily:'system-ui,sans-serif', cursor:'pointer', maxWidth:280 }}>
                     <option value="">Toutes les catégories</option>
-                    {CATEGORIES_PHARMACIE.map(c => <option key={c} value={c}>{c}</option>)}
+                    {CATEGORIES_PHARMACIE.map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
-
                 <button onClick={ouvrirCreate}
-                    className="ml-auto flex items-center gap-2 rounded-lg bg-[#f53003] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#d42a03]">
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                    style={{ display:'flex', alignItems:'center', gap:7, height:38, padding:'0 16px', borderRadius:10, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(245,48,3,0.3)', transition:'transform 0.15s', whiteSpace:'nowrap' }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform='translateY(-1px)'}
+                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform='none'}>
+                    <svg style={{width:14,height:14}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 5v14M5 12h14"/></svg>
                     Nouvelle anomalie
                 </button>
             </div>
 
-            {/* ── Contenu ─────────────────────────────────────────── */}
-            {anomalies.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[#e3e3e0] py-20 text-center dark:border-[#3E3E3A]">
-                    <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Aucune anomalie dans le référentiel.</p>
-                    <button onClick={ouvrirCreate} className="mt-3 text-sm font-medium text-[#f53003] hover:underline">
+            {/* ══════════════════════════════════════ CONTENU */}
+            {anomalies.length===0 ? (
+                <div style={{ borderRadius:20, border:'2px dashed #e5e7eb', padding:'60px 40px', textAlign:'center', fontFamily:'system-ui,sans-serif' }}>
+                    <div style={{ fontSize:44, marginBottom:12 }}>📋</div>
+                    <p style={{ fontSize:15, fontWeight:700, color:'#1a1a18', marginBottom:6 }}>Aucune anomalie dans le référentiel</p>
+                    <p style={{ fontSize:13, color:'#9ca3af', marginBottom:18 }}>Commencez par ajouter une première anomalie.</p>
+                    <button onClick={ouvrirCreate}
+                        style={{ height:36, padding:'0 20px', borderRadius:10, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(245,48,3,0.25)' }}>
                         Ajouter la première
                     </button>
                 </div>
             ) : (
-                <div className="space-y-6">
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                     {Object.entries(groupes)
-                        .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([categorieName, items]) => (
-                            <div key={categorieName}>
-                                {/* Titre de catégorie */}
-                                <div className="mb-2 flex items-center gap-3">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-[#706f6c] dark:text-[#A1A09A]">
-                                        {categorieName}
-                                    </span>
-                                    <div className="h-px flex-1 bg-[#e3e3e0] dark:bg-[#3E3E3A]"/>
-                                    <span className="text-xs text-[#706f6c] dark:text-[#A1A09A]">{items.length}</span>
-                                </div>
-
-                                {/* Ligne par anomalie */}
-                                <div className="overflow-hidden rounded-xl border border-[#e3e3e0] bg-white dark:border-[#3E3E3A] dark:bg-[#161615]">
-                                    {items.map((a, i) => (
-                                        <div key={a.id}
-                                            className={`flex items-start justify-between gap-4 px-5 py-4 ${i < items.length - 1 ? 'border-b border-[#e3e3e0] dark:border-[#3E3E3A]' : ''} ${!a.actif ? 'opacity-50' : ''}`}>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{a.nom}</p>
-                                                    {!a.actif && (
-                                                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                                                            Inactif
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {a.description && (
-                                                    <p className="mt-0.5 truncate text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                        {a.description}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <div className="flex flex-shrink-0 items-center gap-1">
-                                                <button onClick={() => ouvrirEdit(a)}
-                                                    className="rounded-lg p-2 text-[#706f6c] hover:bg-[#f5f5f3] hover:text-[#1b1b18] dark:hover:bg-[#1C1C1A] dark:hover:text-[#EDEDEC]"
-                                                    title="Modifier">
-                                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                                                        <path d="M11 4H4C3.448 4 3 4.448 3 5V19C3 19.552 3.448 20 4 20H18C18.552 20 19 19.552 19 19V12M17.586 2.586A2 2 0 0120.414 5.414L11.828 14H9V11.172L17.586 2.586Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                                    </svg>
-                                                </button>
-                                                <button onClick={() => toggleActif(a)}
-                                                    className="rounded-lg p-2 text-[#706f6c] hover:bg-[#f5f5f3] hover:text-[#1b1b18] dark:hover:bg-[#1C1C1A] dark:hover:text-[#EDEDEC]"
-                                                    title={a.actif ? 'Désactiver' : 'Activer'}>
-                                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                                                        {a.actif
-                                                            ? <path d="M18.36 6.64A9 9 0 115.64 18.36M12 2V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                                                            : <path d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2ZM8 12L10.5 14.5L16 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                                        }
-                                                    </svg>
-                                                </button>
-                                                <button onClick={() => supprimer(a)}
-                                                    className="rounded-lg p-2 text-[#706f6c] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
-                                                    title="Supprimer">
-                                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                                                        <path d="M3 6H5H21M8 6V4C8 3.448 8.448 3 9 3H15C15.552 3 16 3.448 16 4V6M19 6L18 20C18 20.552 17.552 21 17 21H7C6.448 21 6 20.552 6 20L5 6H19Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
+                        .sort(([a],[b])=>a.localeCompare(b))
+                        .map(([catName, items])=>{
+                            const cfg = getCat(catName);
+                            return (
+                                <div key={catName}>
+                                    {/* Header catégorie */}
+                                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+                                        <div style={{ display:'flex', alignItems:'center', gap:7, padding:'4px 12px 4px 8px', borderRadius:100, background:cfg.bg, border:`1px solid ${cfg.border}` }}>
+                                            <span style={{ fontSize:14 }}>{cfg.icon}</span>
+                                            <span style={{ fontSize:11, fontWeight:800, color:cfg.color, letterSpacing:'0.04em', textTransform:'uppercase', fontFamily:'system-ui,sans-serif' }}>{catName}</span>
                                         </div>
-                                    ))}
+                                        <div style={{ height:1, flex:1, background:'#f0f0ee' }}/>
+                                        <span style={{ fontSize:11, fontWeight:700, color:'#9ca3af', background:'#f5f5f3', borderRadius:100, padding:'2px 8px', fontFamily:'system-ui,sans-serif' }}>
+                                            {items.length} anomalie{items.length>1?'s':''}
+                                        </span>
+                                    </div>
+
+                                    {/* Liste anomalies */}
+                                    <div style={{ borderRadius:16, overflow:'hidden', border:'1px solid #eee', background:'#fff', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+                                        <div style={{ height:2, background:`linear-gradient(90deg,${cfg.color},${cfg.border})` }}/>
+                                        {items.map((a,i)=>(
+                                            <div key={a.id}
+                                                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'12px 16px', borderBottom:i<items.length-1?'1px solid #f5f5f3':'none', opacity:a.actif?1:0.5, transition:'background 0.15s' }}
+                                                onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='#fafaf9'}
+                                                onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}>
+
+                                                {/* Bullet + nom */}
+                                                <div style={{ display:'flex', alignItems:'flex-start', gap:10, flex:1, minWidth:0 }}>
+                                                    <div style={{ width:7, height:7, borderRadius:'50%', background:a.actif?cfg.color:'#d1d5db', marginTop:5, flexShrink:0 }}/>
+                                                    <div style={{ minWidth:0 }}>
+                                                        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                                                            <p style={{ fontSize:14, fontWeight:600, color:'#1a1a18', fontFamily:'system-ui,sans-serif' }}>{a.nom}</p>
+                                                            {!a.actif && (
+                                                                <span style={{ fontSize:10, fontWeight:700, color:'#6b7280', background:'#f3f4f6', border:'1px solid #e5e7eb', borderRadius:100, padding:'1px 7px', fontFamily:'system-ui,sans-serif' }}>Inactif</span>
+                                                            )}
+                                                        </div>
+                                                        {a.description && (
+                                                            <p style={{ fontSize:12, color:'#9ca3af', marginTop:2, fontFamily:'system-ui,sans-serif', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:480 }}>
+                                                                {a.description}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div style={{ display:'flex', alignItems:'center', gap:2, flexShrink:0 }}>
+                                                    <button onClick={()=>ouvrirEdit(a)} title="Modifier"
+                                                        style={{ width:30, height:30, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                                        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='#f0f0ee'}
+                                                        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}>
+                                                        <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                    </button>
+                                                    <button onClick={()=>toggleActif(a)} title={a.actif?'Désactiver':'Activer'}
+                                                        style={{ width:30, height:30, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                                        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background=a.actif?'#f0f0ee':'#f0fdf4'}
+                                                        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}>
+                                                        <svg style={{width:13,height:13,color:a.actif?'#9ca3af':'#16a34a'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            {a.actif
+                                                                ? <path strokeLinecap="round" strokeWidth={1.5} d="M18.36 6.64A9 9 0 115.64 18.36M12 2V12"/>
+                                                                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                            }
+                                                        </svg>
+                                                    </button>
+                                                    <button onClick={()=>supprimer(a)} title="Supprimer"
+                                                        style={{ width:30, height:30, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', transition:'background 0.15s' }}
+                                                        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='#fef2f2'}
+                                                        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}>
+                                                        <svg style={{width:13,height:13,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                 </div>
             )}
 
-            {/* ── Modal create / edit ─────────────────────────────── */}
+            {/* ══════════════════════════════════════ MODAL CREATE / EDIT */}
             {modal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-[#161615]">
+                <div style={{ position:'fixed', inset:0, zIndex:50, display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'rgba(10,10,8,0.6)', backdropFilter:'blur(10px)' }}>
+                    <div style={{ width:'100%', maxWidth:480, borderRadius:24, background:'#fff', boxShadow:'0 32px 80px rgba(0,0,0,0.2)', overflow:'hidden' }}>
+
                         {/* Header */}
-                        <div className="flex items-center justify-between border-b border-[#e3e3e0] px-6 py-4 dark:border-[#3E3E3A]">
-                            <h2 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">
-                                {modal === 'create' ? 'Nouvelle anomalie' : `Modifier — ${editing?.nom}`}
-                            </h2>
-                            <button onClick={fermer} className="rounded-lg p-1.5 text-[#706f6c] hover:bg-[#f5f5f3] dark:hover:bg-[#3E3E3A]">
-                                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        <div style={{ padding:'18px 22px 14px', borderBottom:'1px solid #f0f0ee', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                                <div style={{ width:38, height:38, borderRadius:11, background:modal==='create'?'linear-gradient(135deg,#f53003,#ff8c6a)':getCat(form.categorie||'Autre').bg, border:modal==='edit'?`1.5px solid ${getCat(form.categorie||'Autre').border}`:'none', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>
+                                    {modal==='create' ? '➕' : getCat(form.categorie||'Autre').icon}
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize:15, fontWeight:700, color:'#1a1a18', letterSpacing:'-0.2px' }}>
+                                        {modal==='create' ? 'Nouvelle anomalie' : `Modifier — ${editing?.nom}`}
+                                    </h2>
+                                    <p style={{ fontSize:11, color:'#9ca3af', fontFamily:'system-ui,sans-serif', marginTop:1 }}>
+                                        {modal==='create' ? 'Ajouter au référentiel' : 'Mettre à jour les informations'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={fermer} style={{ width:28, height:28, borderRadius:8, border:'1px solid #f0f0ee', background:'#fafaf9', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <svg style={{width:12,height:12,color:'#9ca3af'}} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                         </div>
 
-                        {/* Formulaire */}
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} style={{ padding:'18px 22px', display:'flex', flexDirection:'column', gap:14 }}>
                             <div>
-                                <label className="mb-1.5 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
-                                    Nom *
-                                </label>
-                                <input type="text" value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))}
-                                    placeholder="ex : Hypertension artérielle"
-                                    required autoFocus
-                                    className={inputCls + (serverErrors?.nom ? ' border-red-400' : '')}/>
-                                {serverErrors?.nom && <p className="mt-1 text-xs text-red-500">{serverErrors.nom}</p>}
+                                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Nom *</label>
+                                <input type="text" value={form.nom} onChange={e=>setForm(p=>({...p,nom:e.target.value}))}
+                                    placeholder="ex : Hypertension artérielle" required autoFocus
+                                    style={{ ...iSx, borderColor:serverErrors?.nom?'#ef4444':'#f0f0ee' }} onFocus={fIn} onBlur={fOut}/>
+                                {serverErrors?.nom && <p style={{ marginTop:4, fontSize:11, color:'#ef4444', fontFamily:'system-ui,sans-serif' }}>{serverErrors.nom}</p>}
                             </div>
 
                             <div>
-                                <label className="mb-1.5 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
-                                    Catégorie
-                                </label>
-                                <select value={form.categorie}
-                                    onChange={e => setForm(p => ({ ...p, categorie: e.target.value }))}
-                                    className={inputCls}>
-                                    <option value="">— Choisir une catégorie —</option>
-                                    {CATEGORIES_PHARMACIE.map(c => (
-                                        <option key={c} value={c}>{c}</option>
-                                    ))}
-                                </select>
+                                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Catégorie</label>
+                                <div style={{ position:'relative' }}>
+                                    {form.categorie && (
+                                        <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>
+                                            {getCat(form.categorie).icon}
+                                        </span>
+                                    )}
+                                    <select value={form.categorie} onChange={e=>setForm(p=>({...p,categorie:e.target.value}))}
+                                        style={{ ...iSx, paddingLeft:form.categorie?34:12, borderColor:form.categorie?getCat(form.categorie).color:'#f0f0ee', background:form.categorie?getCat(form.categorie).bg:'#fafaf9', color:form.categorie?getCat(form.categorie).color:'#374151' }}
+                                        onFocus={fIn} onBlur={fOut}>
+                                        <option value="">— Choisir une catégorie —</option>
+                                        {CATEGORIES_PHARMACIE.map(c=><option key={c} value={c}>{CAT_CFG[c]?.icon??'📋'} {c}</option>)}
+                                    </select>
+                                </div>
                             </div>
 
                             <div>
-                                <label className="mb-1.5 block text-sm font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
-                                    Description
-                                </label>
-                                <textarea value={form.description}
-                                    onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                                    rows={3} placeholder="Description optionnelle…"
-                                    className={inputCls + ' resize-none'}/>
+                                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'#374151', fontFamily:'system-ui,sans-serif', marginBottom:6 }}>Description</label>
+                                <textarea value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} rows={3}
+                                    placeholder="Description optionnelle…"
+                                    style={{ ...iSx, height:'auto', padding:'8px 12px', resize:'vertical' }} onFocus={fIn} onBlur={fOut}/>
                             </div>
 
-                            <div className="flex justify-end gap-3 border-t border-[#e3e3e0] pt-4 dark:border-[#3E3E3A]">
-                                <button type="button" onClick={fermer}
-                                    className="rounded-lg border border-[#e3e3e0] px-4 py-2 text-sm font-medium text-[#1b1b18] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:text-[#EDEDEC]">
-                                    Annuler
-                                </button>
+                            <div style={{ display:'flex', justifyContent:'flex-end', gap:10, paddingTop:8, borderTop:'1px solid #f0f0ee' }}>
+                                <button type="button" onClick={fermer} style={{ height:36, padding:'0 16px', borderRadius:9, border:'1.5px solid #f0f0ee', background:'#fff', fontSize:13, fontWeight:600, color:'#706f6c', cursor:'pointer', fontFamily:'system-ui,sans-serif' }}>Annuler</button>
                                 <button type="submit"
-                                    className="rounded-lg bg-[#f53003] px-4 py-2 text-sm font-medium text-white hover:bg-[#d42a03]">
-                                    {modal === 'create' ? 'Ajouter' : 'Enregistrer'}
+                                    style={{ height:36, padding:'0 18px', borderRadius:9, background:'linear-gradient(135deg,#f53003,#e02a00)', border:'none', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'system-ui,sans-serif', boxShadow:'0 4px 14px rgba(245,48,3,0.25)', display:'flex', alignItems:'center', gap:7 }}>
+                                    ✓ {modal==='create' ? 'Ajouter' : 'Enregistrer'}
                                 </button>
                             </div>
                         </form>
@@ -304,5 +297,3 @@ export default function AnomaliesIndex({
         </DashboardLayout>
     );
 }
-
-const inputCls = "w-full rounded-lg border border-[#e3e3e0] bg-white px-4 py-2.5 text-sm focus:border-[#f53003] focus:outline-none focus:ring-1 focus:ring-[#f53003] dark:border-[#3E3E3A] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]";
